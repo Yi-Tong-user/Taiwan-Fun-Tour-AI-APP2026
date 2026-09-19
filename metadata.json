@@ -1,0 +1,10 @@
+{
+  "name": "Remix 臺灣好好玩",
+  "description": "臺灣探索互動地圖與城市隨機出發指南，整合全臺22縣市農漁牧特色、景點與住宿推薦、Gemini伺服器端AI一鍵1日遊/2日遊行程規劃與Google Maps導航連動。",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

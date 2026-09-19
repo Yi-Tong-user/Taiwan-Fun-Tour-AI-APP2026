@@ -1,0 +1,6 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.TaiwanExplore" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#0F766E</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+    </style>
+</resources>

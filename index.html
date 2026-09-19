@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>臺灣好好玩</title>
+    <meta name="description" content="臺灣探索互動地圖與城市隨機出發指南，全台22縣市地圖探索旅程，整合地方介紹與農漁牧特色、熱門景點地標、觀光工廠、住宿推薦、Google Maps地圖導航，提供下拉選單客製化旅程安排、多元交通工具（含離島飛機/客輪）、1至5天AI行程規劃與維持同一住宿選項，本機定位嚴格保護個資隱私。" />
+    <meta property="og:title" content="臺灣好好玩" />
+    <meta property="og:description" content="臺灣探索互動地圖與城市隨機出發指南，全台22縣市地圖探索旅程，整合地方介紹與農漁牧特色、熱門景點地標、觀光工廠、住宿推薦、Google Maps地圖導航，提供下拉選單客製化旅程安排、多元交通工具（含離島飛機/客輪）、1至5天AI行程規劃與維持同一住宿選項，本機定位嚴格保護個資隱私。" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#1976D2" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/taiwan-icon.svg" />
+    <link rel="apple-touch-icon" href="/taiwan-icon.svg" />
+    <script>
+      // Suppress benign Vite WebSocket / HMR connection errors in preview sandbox
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event && event.reason;
+        var msg = (typeof reason === 'string' ? reason : (reason && reason.message) || '') + '';
+        if (msg.includes('WebSocket') || msg.includes('websocket')) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('error', function (event) {
+        var msg = (event && event.message) || '';
+        if (msg.includes('WebSocket') || msg.includes('websocket')) {
+          event.preventDefault();
+        }
+      });
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 selection:bg-blue-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

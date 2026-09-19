@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "臺灣好好玩 - 臺灣探索與隨機出發指南",
+  "short_name": "臺灣好好玩",
+  "description": "探索全臺22縣市特色、農漁牧產品、景點與住宿推薦，AI智慧旅程規劃連動Google Maps",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#1976D2",
+  "icons": [
+    {
+      "src": "/taiwan-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "navigation"]
+}
