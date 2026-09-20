@@ -17,43 +17,56 @@ class GeminiPlanService {
         days: Int,
         style: String,
         transport: String,
-        stayPreference: String = "舒適質感商旅",
-        specialRequests: String = ""
+        stayPreference: String = "經典舒適",
+        keepSameHotel: Boolean = true,
+        userOrigin: String? = null
     ): ItineraryPlan = withContext(Dispatchers.IO) {
         val city = TaiwanDataProvider.getCityByName(cityName)
             ?: TaiwanDataProvider.cities.first()
 
+        val styleConnotation = when (style) {
+            "休閒遊憩" -> "休閒放鬆、親子友善、步調舒緩、度假氛圍、室內園區與漫步"
+            "文化生活" -> "古蹟巡禮、歷史建築、文創園區、在地工藝、民俗信仰與生活走讀"
+            "戶外漫遊" -> "自然生態、步道漫步、國家公園或風景區、山海壯麗景致"
+            "美食尋味" -> "在地老店、夜市美饌、農漁特產美食、特色小吃與排隊名店"
+            else -> style
+        }
+
         // Build prompt enforcing strict JSON output
         val prompt = """
             你是一位專門規劃台灣旅遊的行程專家與助手。
-            請針對【${city.name}】規劃 ${days} 天的完整行程。
-            旅遊風格：${style}
+            請針對【${city.name}】規劃 ${days} 天的深度且順向的完整行程。
+            旅遊風格：${style}（核心意涵：${styleConnotation}）
             交通方式：${transport}
-            住宿偏好：${stayPreference}
-            特別需求：${specialRequests.ifEmpty { "無" }}
+            ${if (days > 1) "住宿偏好：$stayPreference （${if (days >= 3) if (keepSameHotel) "旅客希望維持同一間住宿" else "旅客希望體驗不同住宿" else "請安排適合之住宿"}）" else "一日遊無需住宿安排"}
+            
+            重要規劃原則：
+            1. 行程不可只局限於市中心，必須穿插非市中心的在地行政區（例如：${city.districts.take(6).joinToString("、")}等）。
+            2. 景點之間的動線必須高度順向，相鄰兩點車程原則在 15-30 分鐘內，嚴禁折返跑。
+            3. ${if (days > 1) "隔天出發的第一個景點，與前一晚的住宿地點車程需在 30 分鐘以內。" else ""}
+            4. 每天安排 3~4 個主要景點，且必須考量營業時間與在地特色。
+            5. 在第 ${days} 天結束時，必須給予返程交通建議（如高鐵/台鐵/客運班次或國道指引）。
             
             輸出規則：
-            1. 必須輸出符合標準 JSON 格式的內容，不要包含任何 markdown 代碼標籤（如 ```json）或額外的客套話。
-            2. 每天安排 3~4 個主要景點，景點之間的路線需符合地理邏輯，避免折返跑。
-            3. 每個景點需包含：時間、景點名稱、特色簡介、建議停留時長、前往下一站的交通方式與預估時間，以及供 Google Maps 導航搜尋的關鍵字。
-            
-            JSON 結構範例：
+            1. 必須輸出符合標準 JSON 格式的內容，嚴禁包含 markdown 代碼標籤（如 ```json）或任何額外文字。
+            2. JSON 結構：
             {
-              "title": "${city.name} ${days}日經典旅行",
+              "title": "${city.name} ${days}日・${style}",
+              "returnTransitGuide": "建議可搭乘高鐵/台鐵或經由國道返程，車程約...",
               "days": [
                 {
                   "dayNumber": 1,
                   "dateLabel": "第 1 天",
-                  "title": "文化慢活探訪",
-                  "theme": "古蹟巡禮與在地風情",
+                  "title": "主題名稱",
+                  "theme": "${style}",
                   "spots": [
                     {
                       "time": "09:30 - 11:30",
-                      "name": "經典景點名稱",
-                      "intro": "特色亮點簡短描述",
+                      "name": "景點名稱",
+                      "intro": "特色簡介與農漁牧亮點",
                       "duration": "2 小時",
                       "transportToNext": "開車約 15 分鐘",
-                      "googleMapsKeyword": "景點搜尋名稱"
+                      "googleMapsKeyword": "${city.name} 景點名稱"
                     }
                   ]
                 }
@@ -73,7 +86,7 @@ class GeminiPlanService {
         if (apiKey.isNotEmpty() && apiKey != "your_api_key_here") {
             try {
                 val responseJson = callGeminiRestApi(apiKey, prompt)
-                val parsed = parsePlanJson(responseJson, city.name, days, style, city.islandNotice)
+                val parsed = parsePlanJson(responseJson, city.name, days, style, city.islandNotice, keepSameHotel, stayPreference, userOrigin)
                 if (parsed != null) return@withContext parsed
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -81,7 +94,7 @@ class GeminiPlanService {
         }
 
         // Fallback to high-quality curated itinerary based on the city's verified local highlights
-        return@withContext generateCuratedPlan(city.name, days, style, stayPreference, city.islandNotice)
+        return@withContext generateCuratedPlan(city.name, days, style, stayPreference, keepSameHotel, city.islandNotice, userOrigin)
     }
 
     private fun callGeminiRestApi(apiKey: String, prompt: String): String {
@@ -125,14 +138,27 @@ class GeminiPlanService {
         cityName: String,
         daysCount: Int,
         style: String,
-        islandNotice: String?
+        islandNotice: String?,
+        keepSameHotel: Boolean,
+        stayPreference: String,
+        userOrigin: String?
     ): ItineraryPlan? {
         try {
             val cleaned = jsonString.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
             val obj = JSONObject(cleaned)
-            val title = obj.optString("title", "$cityName $daysCount 日遊")
+            val title = obj.optString("title", "$cityName $daysCount 日遊・$style")
+            val returnTransitGuide = obj.optString("returnTransitGuide", "行程結束後，建議可搭乘高鐵、臺鐵或行經國道返程，祝您旅途愉快！")
             val daysArray = obj.getJSONArray("days")
             val daysList = mutableListOf<DayItinerary>()
+            val city = TaiwanDataProvider.getCityByName(cityName)
+
+            val matchingHotel = city?.accommodations?.find {
+                when {
+                    stayPreference.contains("尊榮") || stayPreference.contains("奢華") -> it.tier == "luxury"
+                    stayPreference.contains("小資") || stayPreference.contains("經濟") -> it.tier == "budget"
+                    else -> it.tier == "standard"
+                }
+            } ?: city?.accommodations?.firstOrNull()
 
             for (i in 0 until daysArray.length()) {
                 val dayObj = daysArray.getJSONObject(i)
@@ -152,13 +178,22 @@ class GeminiPlanService {
                             intro = sObj.optString("intro", "在地推薦熱門好去處。"),
                             duration = sObj.optString("duration", "1.5 小時"),
                             transportToNext = sObj.optString("transportToNext", "前往下一站約 15 分鐘"),
-                            googleMapsKeyword = sObj.optString("googleMapsKeyword", sObj.optString("name", cityName))
+                            googleMapsKeyword = sObj.optString("googleMapsKeyword", "${cityName} " + sObj.optString("name", ""))
                         )
                     )
                 }
 
-                val city = TaiwanDataProvider.getCityByName(cityName)
-                val stay = city?.accommodations?.getOrNull(i % (city.accommodations.size.coerceAtLeast(1)))
+                // Decide stay hotel
+                val stay = if (daysCount > 1 && i < daysCount) {
+                    if (keepSameHotel) {
+                        matchingHotel
+                    } else {
+                        city?.accommodations?.getOrNull(i % (city.accommodations.size.coerceAtLeast(1))) ?: matchingHotel
+                    }
+                } else null
+
+                // Build multi-stop route url
+                val multiRouteUrl = buildMultiStopRouteUrl(spotsList)
 
                 daysList.add(
                     DayItinerary(
@@ -167,10 +202,18 @@ class GeminiPlanService {
                         title = dayTitle,
                         theme = dayTheme,
                         spots = spotsList,
-                        stayHotel = stay
+                        stayHotel = stay,
+                        multiStopRouteUrl = multiRouteUrl
                     )
                 )
             }
+
+            // Return navigation URL from last spot
+            val lastSpot = daysList.lastOrNull()?.spots?.lastOrNull()
+            val returnNavUrl = if (lastSpot != null) {
+                val dest = if (!userOrigin.isNullOrBlank()) userOrigin else "${cityName}車站"
+                "https://www.google.com/maps/dir/?api=1&origin=${java.net.URLEncoder.encode(lastSpot.googleMapsKeyword, "UTF-8")}&destination=${java.net.URLEncoder.encode(dest, "UTF-8")}&travelmode=driving"
+            } else null
 
             return ItineraryPlan(
                 title = title,
@@ -178,7 +221,9 @@ class GeminiPlanService {
                 daysCount = daysCount,
                 style = style,
                 days = daysList,
-                islandNotice = islandNotice
+                islandNotice = islandNotice,
+                returnNavigationUrl = returnNavUrl,
+                returnTransitGuide = returnTransitGuide
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -191,7 +236,9 @@ class GeminiPlanService {
         days: Int,
         style: String,
         stayPreference: String,
-        islandNotice: String?
+        keepSameHotel: Boolean,
+        islandNotice: String?,
+        userOrigin: String?
     ): ItineraryPlan {
         val city = TaiwanDataProvider.getCityByName(cityName)
             ?: TaiwanDataProvider.cities.first()
@@ -203,8 +250,8 @@ class GeminiPlanService {
         // Select hotel matching stay preference if possible
         val matchingHotel = city.accommodations.find {
             when {
-                stayPreference.contains("奢華") -> it.tier == "luxury"
-                stayPreference.contains("平價") || stayPreference.contains("青旅") -> it.tier == "budget"
+                stayPreference.contains("尊榮") || stayPreference.contains("奢華") -> it.tier == "luxury"
+                stayPreference.contains("小資") || stayPreference.contains("經濟") -> it.tier == "budget"
                 else -> it.tier == "standard"
             }
         } ?: city.accommodations.firstOrNull()
@@ -223,15 +270,23 @@ class GeminiPlanService {
                     PlannedSpot(
                         time = timeSlots.getOrElse(s) { "14:00 - 16:00" },
                         name = sourceSpot.name,
-                        intro = sourceSpot.intro,
+                        intro = "${sourceSpot.intro}（位於${sourceSpot.districts.firstOrNull() ?: city.name}）",
                         duration = "約 1.5 - 2 小時",
-                        transportToNext = if (s < 2) "開車/大眾運輸約 15-20 分鐘抵達「${nextSpot.name}」" else "晚間前往夜市或返回住宿休憩",
+                        transportToNext = if (s < 2) "開車/大眾運輸約 15-20 分鐘抵達「${nextSpot.name}」" else "晚間漫步夜市或前往下榻處休憩（車程約20分鐘）",
                         googleMapsKeyword = sourceSpot.googleMapsQuery
                     )
                 )
             }
 
-            val stayHotel = matchingHotel ?: city.accommodations.getOrNull((d - 1) % city.accommodations.size)
+            val stayHotel = if (days > 1) {
+                if (keepSameHotel) {
+                    matchingHotel
+                } else {
+                    city.accommodations.getOrNull((d - 1) % city.accommodations.size) ?: matchingHotel
+                }
+            } else null
+
+            val multiRouteUrl = buildMultiStopRouteUrl(spotsForDay)
 
             dayList.add(
                 DayItinerary(
@@ -246,9 +301,22 @@ class GeminiPlanService {
                     },
                     theme = style,
                     spots = spotsForDay,
-                    stayHotel = stayHotel
+                    stayHotel = stayHotel,
+                    multiStopRouteUrl = multiRouteUrl
                 )
             )
+        }
+
+        val lastSpot = dayList.lastOrNull()?.spots?.lastOrNull()
+        val returnNavUrl = if (lastSpot != null) {
+            val dest = if (!userOrigin.isNullOrBlank()) userOrigin else "${city.name}高鐵/臺鐵站"
+            "https://www.google.com/maps/dir/?api=1&origin=${java.net.URLEncoder.encode(lastSpot.googleMapsKeyword, "UTF-8")}&destination=${java.net.URLEncoder.encode(dest, "UTF-8")}&travelmode=driving"
+        } else null
+
+        val returnGuide = if (city.region == "離島") {
+            "離島旅程圓滿結束！建議提早 1 小時前往機場或碼頭完成登機/登船手續，並確認當日天候與班次狀態。"
+        } else {
+            "旅程完美結束！推薦可直接由「${lastSpot?.name ?: city.name}」導航前往鄰近之國道交流道或高鐵/臺鐵站，順暢返程回家。"
         }
 
         return ItineraryPlan(
@@ -257,7 +325,29 @@ class GeminiPlanService {
             daysCount = days,
             style = style,
             days = dayList,
-            islandNotice = islandNotice
+            islandNotice = islandNotice,
+            returnNavigationUrl = returnNavUrl,
+            returnTransitGuide = returnGuide
         )
+    }
+
+    private fun buildMultiStopRouteUrl(spots: List<PlannedSpot>): String? {
+        if (spots.isEmpty()) return null
+        if (spots.size == 1) {
+            return "https://www.google.com/maps/search/?api=1&query=${java.net.URLEncoder.encode(spots.first().googleMapsKeyword, "UTF-8")}"
+        }
+        val origin = java.net.URLEncoder.encode(spots.first().googleMapsKeyword, "UTF-8")
+        val destination = java.net.URLEncoder.encode(spots.last().googleMapsKeyword, "UTF-8")
+        val waypoints = if (spots.size > 2) {
+            spots.subList(1, spots.size - 1).joinToString("|") {
+                java.net.URLEncoder.encode(it.googleMapsKeyword, "UTF-8")
+            }
+        } else ""
+
+        return if (waypoints.isNotEmpty()) {
+            "https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$destination&waypoints=$waypoints&travelmode=driving"
+        } else {
+            "https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$destination&travelmode=driving"
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.taiwan.explore.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,12 +16,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.taiwan.explore.data.*
+import com.taiwan.explore.model.DayItinerary
 import com.taiwan.explore.model.ItineraryPlan
 import com.taiwan.explore.ui.components.ItineraryViewDialog
 import com.taiwan.explore.ui.theme.*
@@ -28,6 +31,7 @@ import com.taiwan.explore.util.AppLanguage
 import com.taiwan.explore.util.getLocalizedCityName
 import com.taiwan.explore.util.getStrings
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavedScreen(
     language: AppLanguage = AppLanguage.ZH_TW
@@ -38,7 +42,8 @@ fun SavedScreen(
     var selectedTab by remember { mutableStateOf(0) } // 0: 全旅程, 1: 單日旅程, 2: 景點收藏
     var refreshKey by remember { mutableStateOf(0) }
     var selectedPlanForView by remember { mutableStateOf<ItineraryPlan?>(null) }
-    var showClearDialog by remember { mutableStateOf(false) }
+    var selectedDayForView by remember { mutableStateOf<Pair<String, DayItinerary>?>(null) }
+    var selectedSpotForView by remember { mutableStateOf<SavedSpotItem?>(null) }
 
     val fullList = remember(refreshKey) { SavedManager.getFullItineraries(context) }
     val dayList = remember(refreshKey) { SavedManager.getDayItineraries(context) }
@@ -50,12 +55,19 @@ fun SavedScreen(
         "${strings.tabSingleSpot} (${spotList.size})"
     )
 
+    val currentTabCount = when (selectedTab) {
+        0 -> fullList.size
+        1 -> dayList.size
+        else -> spotList.size
+    }
+    val isCurrentTabFull = currentTabCount >= SavedManager.MAX_SAVED_ITEMS
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Slate50)
     ) {
-        // Tab Row
+        // Tab Row (Separate tabs for Full, Day, Spots)
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.White,
@@ -77,26 +89,65 @@ fun SavedScreen(
             }
         }
 
-        // Action bar for Spot Tab (Clear all spots)
-        if (selectedTab == 2 && spotList.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End
+        // Full Storage Warning Banner
+        if (isCurrentTabFull) {
+            Surface(
+                color = Amber100,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                TextButton(
-                    onClick = { showClearDialog = true },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(strings.clearAllSpots, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text(text = "⚠️", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = strings.savedLimitReached,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Amber900
+                        )
+                    }
+
+                    Button(
+                        onClick = { /* User focuses on deleting items via swipe */ },
+                        colors = ButtonDefaults.buttonColors(containerColor = Amber800),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(text = strings.organizeSaved, fontSize = 11.sp, color = Color.White)
+                    }
                 }
             }
         }
 
-        // List Content
+        // Swipe-to-delete Hint Banner (No trash icons)
+        Surface(
+            color = Teal50.copy(alpha = 0.6f),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "👈", fontSize = 13.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = strings.swipeToDeleteHint,
+                    fontSize = 11.sp,
+                    color = Teal900,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        // List Content with Swipe-to-Delete
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -110,22 +161,53 @@ fun SavedScreen(
                             EmptyState(strings.emptySavedFull)
                         }
                     } else {
-                        items(fullList) { item ->
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedPlanForView = item.plan }
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                        items(fullList, key = { it.id }) { item ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        SavedManager.removeFullItinerary(context, item.id)
+                                        refreshKey++
+                                        true
+                                    } else false
+                                }
+                            )
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = true,
+                                backgroundContent = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color.Red.copy(alpha = 0.85f))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = strings.deleteItem,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            ) {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedPlanForView = item.plan }
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Surface(
                                                     shape = RoundedCornerShape(8.dp),
@@ -147,33 +229,26 @@ fun SavedScreen(
                                                 )
                                             }
 
-                                            Spacer(modifier = Modifier.height(4.dp))
-
                                             Text(
-                                                text = item.title,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp,
-                                                color = Slate900
-                                            )
-                                            Text(
-                                                text = "風格：${item.style}",
-                                                fontSize = 12.sp,
-                                                color = Slate500
+                                                text = "點選查看完整行程 👉",
+                                                fontSize = 11.sp,
+                                                color = Teal700
                                             )
                                         }
 
-                                        IconButton(
-                                            onClick = {
-                                                SavedManager.removeFullItinerary(context, item.id)
-                                                refreshKey++
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.DeleteOutline,
-                                                contentDescription = strings.deleteItem,
-                                                tint = Color.Red.copy(alpha = 0.7f)
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        Text(
+                                            text = item.title,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = Slate900
+                                        )
+                                        Text(
+                                            text = "風格：${item.style}",
+                                            fontSize = 12.sp,
+                                            color = Slate500
+                                        )
                                     }
                                 }
                             }
@@ -188,20 +263,53 @@ fun SavedScreen(
                             EmptyState(strings.emptySavedDay)
                         }
                     } else {
-                        items(dayList) { item ->
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                        items(dayList, key = { it.id }) { item ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        SavedManager.removeDayItinerary(context, item.id)
+                                        refreshKey++
+                                        true
+                                    } else false
+                                }
+                            )
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = true,
+                                backgroundContent = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color.Red.copy(alpha = 0.85f))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = strings.deleteItem,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            ) {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedDayForView = Pair(item.cityName, item.day) }
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
                                                 color = Teal100
@@ -215,43 +323,31 @@ fun SavedScreen(
                                                 )
                                             }
 
-                                            Spacer(modifier = Modifier.height(4.dp))
-
                                             Text(
-                                                text = item.title,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
-                                                color = Slate900
-                                            )
-                                            Text(
-                                                text = "主題：${item.theme}",
-                                                fontSize = 12.sp,
+                                                text = "點選查看單日細節 👉",
+                                                fontSize = 11.sp,
                                                 color = Teal700
                                             )
                                         }
 
-                                        IconButton(
-                                            onClick = {
-                                                SavedManager.removeDayItinerary(context, item.id)
-                                                refreshKey++
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.DeleteOutline,
-                                                contentDescription = strings.deleteItem,
-                                                tint = Color.Red.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
+                                        Spacer(modifier = Modifier.height(6.dp))
 
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = item.title,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = Slate900
+                                        )
+                                        Text(
+                                            text = "主題：${item.theme}",
+                                            fontSize = 12.sp,
+                                            color = Teal700
+                                        )
 
-                                    // Day spots summary
-                                    item.day.spots.forEachIndexed { i, s ->
-                                        Row(
-                                            modifier = Modifier.padding(vertical = 2.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        // Day spots summary
+                                        item.day.spots.forEachIndexed { i, s ->
                                             Text(
                                                 text = "${i + 1}. ${s.name} (${s.time})",
                                                 fontSize = 12.sp,
@@ -272,42 +368,75 @@ fun SavedScreen(
                             EmptyState(strings.emptySavedSpot)
                         }
                     } else {
-                        items(spotList) { spot ->
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                        items(spotList, key = { it.id }) { spot ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.EndToStart) {
+                                        SavedManager.removeSpot(context, spot.id)
+                                        refreshKey++
+                                        true
+                                    } else false
+                                }
+                            )
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = true,
+                                backgroundContent = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color.Red.copy(alpha = 0.85f))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = Amber100
-                                            ) {
+                                        Text(
+                                            text = strings.deleteItem,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            ) {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedSpotForView = spot }
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = Amber100
+                                                ) {
+                                                    Text(
+                                                        text = getLocalizedCityName(spot.cityName, language),
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Amber900,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
-                                                    text = getLocalizedCityName(spot.cityName, language),
-                                                    fontSize = 10.sp,
+                                                    text = spot.name,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Amber900,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    fontSize = 15.sp,
+                                                    color = Slate900
                                                 )
                                             }
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = spot.name,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
-                                                color = Slate900
-                                            )
-                                        }
 
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                             // Navigation
                                             IconButton(
                                                 onClick = {
@@ -325,31 +454,17 @@ fun SavedScreen(
                                                     tint = Teal700
                                                 )
                                             }
-
-                                            // Delete
-                                            IconButton(
-                                                onClick = {
-                                                    SavedManager.removeSpot(context, spot.id)
-                                                    refreshKey++
-                                                }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.DeleteOutline,
-                                                    contentDescription = strings.deleteItem,
-                                                    tint = Color.Red.copy(alpha = 0.7f)
-                                                )
-                                            }
                                         }
-                                    }
 
-                                    if (spot.intro.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = spot.intro,
-                                            fontSize = 12.sp,
-                                            color = Slate600,
-                                            lineHeight = 17.sp
-                                        )
+                                        if (spot.intro.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = spot.intro,
+                                                fontSize = 12.sp,
+                                                color = Slate600,
+                                                lineHeight = 17.sp
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -369,26 +484,89 @@ fun SavedScreen(
             )
         }
 
-        // Clear all spots confirmation dialog
-        if (showClearDialog) {
+        // View Day Detail Dialog
+        selectedDayForView?.let { (cityName, day) ->
             AlertDialog(
-                onDismissRequest = { showClearDialog = false },
-                title = { Text(strings.clearAllSpots, fontWeight = FontWeight.Bold) },
-                text = { Text(strings.clearAllConfirm) },
+                onDismissRequest = { selectedDayForView = null },
+                title = {
+                    Column {
+                        Text(text = "${day.dateLabel}・${day.title}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = "主題：${day.theme} (${cityName})", fontSize = 12.sp, color = Teal700)
+                    }
+                },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        day.spots.forEachIndexed { i, s ->
+                            Text(
+                                text = "${i + 1}. ${s.name} (${s.time})",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Slate900
+                            )
+                            Text(text = s.intro, fontSize = 12.sp, color = Slate600)
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+
+                        day.stayHotel?.let { hotel ->
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(text = "🏨 推薦住宿：${hotel.name} (${hotel.priceRange})", fontSize = 12.sp, color = Amber800, fontWeight = FontWeight.Bold)
+                        }
+
+                        day.multiStopRouteUrl?.let { routeUrl ->
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(routeUrl))
+                                    context.startActivity(intent)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Teal700),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(text = strings.multiStopRoute, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { selectedDayForView = null }) {
+                        Text(strings.close)
+                    }
+                }
+            )
+        }
+
+        // View Spot Detail Dialog
+        selectedSpotForView?.let { spot ->
+            AlertDialog(
+                onDismissRequest = { selectedSpotForView = null },
+                title = {
+                    Text(text = spot.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                },
+                text = {
+                    Column {
+                        Text(text = "縣市：${getLocalizedCityName(spot.cityName, language)}", fontSize = 12.sp, color = Teal700, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = spot.intro, fontSize = 13.sp, color = Slate700)
+                    }
+                },
                 confirmButton = {
                     Button(
                         onClick = {
-                            SavedManager.clearAllSpots(context)
-                            refreshKey++
-                            showClearDialog = false
+                            val query = Uri.encode(spot.googleMapsQuery)
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://www.google.com/maps/search/?api=1&query=$query")
+                            )
+                            context.startActivity(intent)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        colors = ButtonDefaults.buttonColors(containerColor = Teal700)
                     ) {
-                        Text(strings.deleteItem)
+                        Text(strings.openNavigation)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showClearDialog = false }) {
+                    TextButton(onClick = { selectedSpotForView = null }) {
                         Text(strings.close)
                     }
                 }

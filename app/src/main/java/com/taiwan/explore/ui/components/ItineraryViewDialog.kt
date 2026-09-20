@@ -357,6 +357,26 @@ fun ItineraryViewDialog(
                                 }
                             }
 
+                                }
+                            }
+
+                            // Daily "開啟多點行程路線 🗺️" Button
+                            day.multiStopRouteUrl?.let { routeUrl ->
+                                Spacer(modifier = Modifier.height(10.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(routeUrl))
+                                        context.startActivity(intent)
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal800),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Teal600),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(text = strings.multiStopRoute, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
                             // Stay Hotel if present
                             day.stayHotel?.let { hotel ->
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -410,6 +430,52 @@ fun ItineraryViewDialog(
                                             )
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Return Transit Recommendations & Return Navigation at end of trip
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Emerald50),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Emerald800)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = strings.returnTransitGuide,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Emerald900
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = plan.returnTransitGuide ?: "旅程結束後，建議可搭乘大眾運輸或行經國道返回，祝您旅途平安！",
+                                fontSize = 12.sp,
+                                color = Slate700,
+                                lineHeight = 17.sp
+                            )
+
+                            plan.returnNavigationUrl?.let { navUrl ->
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(navUrl))
+                                        context.startActivity(intent)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Emerald700),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(text = strings.returnNav, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

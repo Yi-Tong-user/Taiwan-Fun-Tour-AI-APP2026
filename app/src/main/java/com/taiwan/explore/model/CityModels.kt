@@ -3,13 +3,22 @@ package com.taiwan.explore.model
 data class Spot(
     val name: String,
     val intro: String,
-    val googleMapsQuery: String
+    val googleMapsQuery: String,
+    val district: String = "",
+    val openingHours: String = "08:00 - 18:00",
+    val startHour: Int = 8,
+    val endHour: Int = 18,
+    val isNightOnly: Boolean = false
 )
 
 data class TourismFactory(
     val name: String,
     val intro: String,
-    val googleMapsQuery: String
+    val googleMapsQuery: String,
+    val district: String = "",
+    val openingHours: String = "09:00 - 17:00",
+    val startHour: Int = 9,
+    val endHour: Int = 17
 )
 
 data class Accommodation(
@@ -19,7 +28,9 @@ data class Accommodation(
     val description: String,
     val locationType: String = "",
     val priceRange: String = "",
-    val googleMapsQuery: String
+    val priceValue: Int = 3000, // numeric for sorting high to low
+    val googleMapsQuery: String,
+    val district: String = ""
 )
 
 data class CityData(
@@ -31,6 +42,7 @@ data class CityData(
     val livestock: String,
     val description: String,
     val region: String, // "北部", "中部", "南部", "東部", "離島"
+    val districts: List<String> = emptyList(), // 所有行政區清單
     val highlights: List<Spot>,
     val tourismFactories: List<TourismFactory>,
     val accommodations: List<Accommodation>,
@@ -44,7 +56,8 @@ data class PlannedSpot(
     val intro: String,
     val duration: String,
     val transportToNext: String,
-    val googleMapsKeyword: String
+    val googleMapsKeyword: String,
+    val district: String = ""
 )
 
 data class DayItinerary(
@@ -53,7 +66,8 @@ data class DayItinerary(
     val title: String,
     val theme: String,
     val spots: List<PlannedSpot>,
-    val stayHotel: Accommodation? = null
+    val stayHotel: Accommodation? = null,
+    val multiStopRouteUrl: String = ""
 )
 
 data class ItineraryPlan(
@@ -62,5 +76,7 @@ data class ItineraryPlan(
     val daysCount: Int,
     val style: String,
     val days: List<DayItinerary>,
-    val islandNotice: String? = null
+    val islandNotice: String? = null,
+    val returnTransitGuide: String? = null,
+    val returnNavQuery: String? = null
 )

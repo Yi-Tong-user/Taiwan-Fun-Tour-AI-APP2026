@@ -56,6 +56,11 @@ data class Strings(
     val fisheryProduce: String,
     val livestockProduce: String,
     val searchCityPlaceholder: String,
+    val startNow: String,
+    val returnToHome: String,
+    val administrativeDistricts: String,
+    val currentlyOperating: String,
+    val closedNow: String,
 
     // Recommendations
     val highlightsTitle: String,
@@ -65,6 +70,8 @@ data class Strings(
     val saveSpot: String,
     val savedSpot: String,
     val priceRange: String,
+    val viewMore: String,
+    val showMore: String,
 
     // AI Tour
     val aiTourTitle: String,
@@ -74,8 +81,9 @@ data class Strings(
     val travelStyle: String,
     val transportMethod: String,
     val stayPreference: String,
-    val specialRequests: String,
-    val specialRequestsHint: String,
+    val keepSameHotel: String,
+    val keepSameHotelYes: String,
+    val keepSameHotelNo: String,
     val generateBtn: String,
     val regenerateBtn: String,
     val generatingPlan: String,
@@ -86,6 +94,9 @@ data class Strings(
     val savedDayItinerary: String,
     val dayN: String,
     val stayHotel: String,
+    val multiStopRoute: String,
+    val returnNav: String,
+    val returnTransitGuide: String,
 
     // Saved
     val savedTitle: String,
@@ -98,6 +109,9 @@ data class Strings(
     val deleteItem: String,
     val clearAllSpots: String,
     val clearAllConfirm: String,
+    val swipeToDeleteHint: String,
+    val savedLimitReached: String,
+    val organizeSaved: String,
 
     // Settings & Modals
     val settingsTitle: String,
@@ -117,15 +131,19 @@ data class Strings(
     val disclaimerText2: String,
     val understandBtn: String,
     val guideTitle: String,
-    val close: String
+    val close: String,
+    val enableLocationInSettings: String,
+    val currentLocation: String,
+    val locating: String,
+    val locationDisabled: String
 )
 
 val zhTwStrings = Strings(
-    appName = "臺灣好好玩",
-    appSubtitle = "探索臺灣 22 縣市・農漁牧特產・AI 行程規劃",
+    appName = "Taiwan Fun Tour",
+    appSubtitle = "探索臺灣22縣市和智慧AI旅程",
     tabDiscover = "發現",
     tabRecommend = "推薦",
-    tabAITour = "AI智慧旅程",
+    tabAITour = "AI旅程",
     tabSaved = "收藏",
     tabSettings = "設定",
 
@@ -143,6 +161,11 @@ val zhTwStrings = Strings(
     fisheryProduce = "漁業水產",
     livestockProduce = "畜牧特產",
     searchCityPlaceholder = "搜尋縣市或特產...",
+    startNow = "即刻啟動",
+    returnToHome = "返回首頁",
+    administrativeDistricts = "行政區劃",
+    currentlyOperating = "營業中",
+    closedNow = "休息中",
 
     highlightsTitle = "必遊景點",
     tourismFactoriesTitle = "觀光工廠",
@@ -151,6 +174,8 @@ val zhTwStrings = Strings(
     saveSpot = "收藏景點",
     savedSpot = "已收藏",
     priceRange = "價格參考",
+    viewMore = "查看更多",
+    showMore = "顯示更多",
 
     aiTourTitle = "Gemini AI 智能行程規劃",
     aiTourSubtitle = "針對各縣市在地特色、農漁牧產與順向動線，客製專屬行程與住宿規劃。",
@@ -159,10 +184,11 @@ val zhTwStrings = Strings(
     travelStyle = "旅遊風格",
     transportMethod = "交通方式",
     stayPreference = "住宿偏好",
-    specialRequests = "特殊需求",
-    specialRequestsHint = "如：帶長輩小孩、需室內避雨吹冷氣、蔬食素食等",
+    keepSameHotel = "多日住宿設定",
+    keepSameHotelYes = "維持原住宿",
+    keepSameHotelNo = "不維持原住宿",
     generateBtn = "立即產生行程規劃",
-    regenerateBtn = "再次生成",
+    regenerateBtn = "再次生成行程規劃",
     generatingPlan = "Gemini 正在智慧規劃行程...",
     generatingPlanSub = "分析在地特色、順向動線與推薦住宿中",
     saveFullItinerary = "收藏整套旅程",
@@ -171,6 +197,9 @@ val zhTwStrings = Strings(
     savedDayItinerary = "已收藏單日",
     dayN = "第 %d 天",
     stayHotel = "推薦住宿",
+    multiStopRoute = "開啟多點行程路線 🗺️",
+    returnNav = "返程導航 🚗",
+    returnTransitGuide = "返程交通建議",
 
     savedTitle = "我的收藏",
     tabFullItinerary = "全旅程",
@@ -182,11 +211,14 @@ val zhTwStrings = Strings(
     deleteItem = "刪除",
     clearAllSpots = "清空所有景點",
     clearAllConfirm = "確定清空所有收藏的景點嗎？",
+    swipeToDeleteHint = "向左滑動即可刪除",
+    savedLimitReached = "收藏夾已額滿（上限20筆）",
+    organizeSaved = "整理收藏",
 
     settingsTitle = "應用程式設定",
     languageSection = "介面語言切換",
     disclaimerSection = "AI 智慧生成免責聲明",
-    guideSection = "臺灣好好玩・使用說明指南",
+    guideSection = "Taiwan Fun Tour・使用說明指南",
     openFullDisclaimer = "查看完整免責聲明",
     openFullGuide = "查看完整使用指南",
     locationRequestTitle = "定位服務說明與請求",
@@ -199,13 +231,17 @@ val zhTwStrings = Strings(
     disclaimerText1 = "本應用程式的行程規劃、交通建議與景點介紹由 Google Gemini 人工智慧模型即時運算生成。景點營業時間、門票價格、大眾運輸班次及路況等資訊可能隨時調整。",
     disclaimerText2 = "出發前請務必透過官方網站或 Google Maps 再次核對店家與景點之最新營業狀態，以確保行程順利。",
     understandBtn = "我已瞭解並同意",
-    guideTitle = "臺灣好好玩・使用說明",
-    close = "關閉"
+    guideTitle = "Taiwan Fun Tour・使用說明",
+    close = "關閉",
+    enableLocationInSettings = "開啟定位功能",
+    currentLocation = "目前位置",
+    locating = "定位中...",
+    locationDisabled = "未開啟定位"
 )
 
 val enStrings = Strings(
     appName = "Taiwan Fun Tour",
-    appSubtitle = "Explore 22 Taiwan Cities・Local Specialties・AI Tour Planner",
+    appSubtitle = "Explore Taiwan's 22 Cities & Smart AI Tours",
     tabDiscover = "Discover",
     tabRecommend = "Recommend",
     tabAITour = "AI Tour",
@@ -226,6 +262,11 @@ val enStrings = Strings(
     fisheryProduce = "Fishery",
     livestockProduce = "Livestock",
     searchCityPlaceholder = "Search city or specialty...",
+    startNow = "Start Now",
+    returnToHome = "Back to Home",
+    administrativeDistricts = "Districts",
+    currentlyOperating = "Open Now",
+    closedNow = "Closed",
 
     highlightsTitle = "Must-Visit Highlights",
     tourismFactoriesTitle = "Tourism Factories",
@@ -234,18 +275,21 @@ val enStrings = Strings(
     saveSpot = "Save Spot",
     savedSpot = "Saved",
     priceRange = "Price Guide",
+    viewMore = "View More",
+    showMore = "Show More",
 
-    aiTourTitle = "Gemini AI Smart Itinerary Planner",
+    aiTourTitle = "Gemini AI Smart Tour Planner",
     aiTourSubtitle = "Customized travel schedules based on local specialties, geography, and smooth routes.",
     selectCity = "Destination City",
     planDays = "Duration",
     travelStyle = "Travel Style",
     transportMethod = "Transportation",
     stayPreference = "Accommodation Preference",
-    specialRequests = "Special Requests",
-    specialRequestsHint = "e.g., family-friendly, indoor/air-conditioned, vegetarian dining",
+    keepSameHotel = "Multi-day Stay",
+    keepSameHotelYes = "Keep Same Hotel",
+    keepSameHotelNo = "Different Hotels",
     generateBtn = "Generate Itinerary Now",
-    regenerateBtn = "Regenerate",
+    regenerateBtn = "Regenerate Itinerary",
     generatingPlan = "Gemini is designing your tour...",
     generatingPlanSub = "Analyzing local attractions, routes, and hotels",
     saveFullItinerary = "Save Full Trip",
@@ -254,6 +298,9 @@ val enStrings = Strings(
     savedDayItinerary = "Day Saved",
     dayN = "Day %d",
     stayHotel = "Recommended Stay",
+    multiStopRoute = "Open Multi-Stop Route 🗺️",
+    returnNav = "Return Navigation 🚗",
+    returnTransitGuide = "Return Transit Guide",
 
     savedTitle = "My Saved Collections",
     tabFullItinerary = "Full Trips",
@@ -265,6 +312,9 @@ val enStrings = Strings(
     deleteItem = "Delete",
     clearAllSpots = "Clear All Spots",
     clearAllConfirm = "Are you sure you want to clear all saved spots?",
+    swipeToDeleteHint = "Swipe left to delete",
+    savedLimitReached = "Saved collection is full (Max 20)",
+    organizeSaved = "Manage Saved Items",
 
     settingsTitle = "Application Settings",
     languageSection = "Language Selection",
@@ -283,12 +333,16 @@ val enStrings = Strings(
     disclaimerText2 = "Please verify opening hours with official websites or Google Maps before your trip to ensure a seamless experience.",
     understandBtn = "I Understand & Agree",
     guideTitle = "Taiwan Fun Tour User Guide",
-    close = "Close"
+    close = "Close",
+    enableLocationInSettings = "Enable Location Service",
+    currentLocation = "Current Location",
+    locating = "Locating...",
+    locationDisabled = "Location Disabled"
 )
 
 val jaStrings = Strings(
-    appName = "台湾満喫ツアー",
-    appSubtitle = "台湾22県市・特産品・AIスマート旅行プランナー",
+    appName = "Taiwan Fun Tour",
+    appSubtitle = "台湾22県市とAIスマート旅程を探索",
     tabDiscover = "発見",
     tabRecommend = "おすすめ",
     tabAITour = "AI旅程",
@@ -309,6 +363,11 @@ val jaStrings = Strings(
     fisheryProduce = "水産物",
     livestockProduce = "畜産物",
     searchCityPlaceholder = "県市や特産を検索...",
+    startNow = "今すぐ出発",
+    returnToHome = "ホームへ戻る",
+    administrativeDistricts = "行政区画",
+    currentlyOperating = "営業中",
+    closedNow = "営業時間外",
 
     highlightsTitle = "必見スポット",
     tourismFactoriesTitle = "観光工場",
@@ -317,6 +376,8 @@ val jaStrings = Strings(
     saveSpot = "スポット保存",
     savedSpot = "保存済み",
     priceRange = "料金目安",
+    viewMore = "もっと見る",
+    showMore = "さらに表示",
 
     aiTourTitle = "Gemini AI 旅程プランナー",
     aiTourSubtitle = "特産品や名所、効率的なルートを考慮したカスタム旅程と宿泊プラン。",
@@ -325,10 +386,11 @@ val jaStrings = Strings(
     travelStyle = "旅行スタイル",
     transportMethod = "移動手段",
     stayPreference = "宿泊の好み",
-    specialRequests = "特別なご要望",
-    specialRequestsHint = "例：子供・高齢者向け、雨天・室内希望、ベジタリアンなど",
+    keepSameHotel = "連泊設定",
+    keepSameHotelYes = "同じホテルに宿泊",
+    keepSameHotelNo = "別のホテルに宿泊",
     generateBtn = "旅程を作成する",
-    regenerateBtn = "再生成",
+    regenerateBtn = "旅程を再生成する",
     generatingPlan = "Gemini が旅程を設計中...",
     generatingPlanSub = "観光地、移動ルート、ホテルを分析しています",
     saveFullItinerary = "旅程全体を保存",
@@ -337,6 +399,9 @@ val jaStrings = Strings(
     savedDayItinerary = "保存完了",
     dayN = "%d日目",
     stayHotel = "おすすめホテル",
+    multiStopRoute = "複数スポットのルートを開く 🗺️",
+    returnNav = "復路ナビ 🚗",
+    returnTransitGuide = "復路の交通案内",
 
     savedTitle = "保存したコレクション",
     tabFullItinerary = "全旅程",
@@ -348,6 +413,9 @@ val jaStrings = Strings(
     deleteItem = "削除",
     clearAllSpots = "スポットをすべて削除",
     clearAllConfirm = "保存したスポットをすべて削除してもよろしいですか？",
+    swipeToDeleteHint = "左にスワイプして削除",
+    savedLimitReached = "お気に入りが上限に達しました（最大20件）",
+    organizeSaved = "お気に入りを整理する",
 
     settingsTitle = "アプリ設定",
     languageSection = "言語切り替え",
@@ -366,7 +434,11 @@ val jaStrings = Strings(
     disclaimerText2 = "ご出発前に公式サイトまたは Google マップで最新の営業状況をご確認ください。",
     understandBtn = "同意して利用する",
     guideTitle = "ご利用ガイド",
-    close = "閉じる"
+    close = "閉じる",
+    enableLocationInSettings = "位置情報サービスを有効にする",
+    currentLocation = "現在地",
+    locating = "現在地を取得中...",
+    locationDisabled = "位置情報未取得"
 )
 
 fun getStrings(lang: AppLanguage): Strings {

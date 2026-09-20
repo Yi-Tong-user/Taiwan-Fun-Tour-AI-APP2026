@@ -46,6 +46,12 @@ object SavedManager {
     private const val KEY_DAY = "saved_day_itineraries"
     private const val KEY_SPOTS = "saved_spots"
 
+    const val MAX_SAVED_ITEMS = 20
+
+    fun canSaveFull(context: Context): Boolean = getFullItineraries(context).size < MAX_SAVED_ITEMS
+    fun canSaveDay(context: Context): Boolean = getDayItineraries(context).size < MAX_SAVED_ITEMS
+    fun canSaveSpot(context: Context): Boolean = getSavedSpots(context).size < MAX_SAVED_ITEMS
+
     // --- FULL ITINERARY ---
     fun getFullItineraries(context: Context): List<SavedFullItinerary> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -86,7 +92,8 @@ object SavedManager {
                             description = hObj.optString("description"),
                             locationType = hObj.optString("locationType"),
                             priceRange = hObj.optString("priceRange"),
-                            googleMapsQuery = hObj.optString("googleMapsQuery")
+                            googleMapsQuery = hObj.optString("googleMapsQuery"),
+                            priceValue = hObj.optInt("priceValue", 2500)
                         )
                     } else null
 
@@ -97,7 +104,8 @@ object SavedManager {
                             title = dObj.optString("title"),
                             theme = dObj.optString("theme"),
                             spots = spots,
-                            stayHotel = stay
+                            stayHotel = stay,
+                            multiStopRouteUrl = if (dObj.has("multiStopRouteUrl") && !dObj.isNull("multiStopRouteUrl")) dObj.optString("multiStopRouteUrl") else null
                         )
                     )
                 }
@@ -108,7 +116,9 @@ object SavedManager {
                     daysCount = planObj.optInt("daysCount"),
                     style = planObj.optString("style"),
                     days = days,
-                    islandNotice = if (planObj.has("islandNotice") && !planObj.isNull("islandNotice")) planObj.optString("islandNotice") else null
+                    islandNotice = if (planObj.has("islandNotice") && !planObj.isNull("islandNotice")) planObj.optString("islandNotice") else null,
+                    returnNavigationUrl = if (planObj.has("returnNavigationUrl") && !planObj.isNull("returnNavigationUrl")) planObj.optString("returnNavigationUrl") else null,
+                    returnTransitGuide = if (planObj.has("returnTransitGuide") && !planObj.isNull("returnTransitGuide")) planObj.optString("returnTransitGuide") else null
                 )
 
                 list.add(
@@ -129,11 +139,15 @@ object SavedManager {
         return list
     }
 
-    fun saveFullItinerary(context: Context, plan: ItineraryPlan): SavedFullItinerary {
+    fun saveFullItinerary(context: Context, plan: ItineraryPlan): SavedFullItinerary? {
         val current = getFullItineraries(context).toMutableList()
         // If already exists with same title & cityName, don't duplicate
         val existing = current.find { it.cityName == plan.cityName && it.title == plan.title }
         if (existing != null) return existing
+
+        if (current.size >= MAX_SAVED_ITEMS) {
+            return null
+        }
 
         val item = SavedFullItinerary(
             cityName = plan.cityName,
@@ -173,6 +187,8 @@ object SavedManager {
                     put("daysCount", item.plan.daysCount)
                     put("style", item.plan.style)
                     put("islandNotice", item.plan.islandNotice ?: JSONObject.NULL)
+                    put("returnNavigationUrl", item.plan.returnNavigationUrl ?: JSONObject.NULL)
+                    put("returnTransitGuide", item.plan.returnTransitGuide ?: JSONObject.NULL)
 
                     val daysArr = JSONArray()
                     for (day in item.plan.days) {
@@ -181,6 +197,7 @@ object SavedManager {
                             put("dateLabel", day.dateLabel)
                             put("title", day.title)
                             put("theme", day.theme)
+                            put("multiStopRouteUrl", day.multiStopRouteUrl ?: JSONObject.NULL)
 
                             val spotsArr = JSONArray()
                             for (spot in day.spots) {
@@ -204,6 +221,7 @@ object SavedManager {
                                     put("locationType", hotel.locationType)
                                     put("priceRange", hotel.priceRange)
                                     put("googleMapsQuery", hotel.googleMapsQuery)
+                                    put("priceValue", hotel.priceValue)
                                 })
                             }
                         }
@@ -254,7 +272,8 @@ object SavedManager {
                         description = hObj.optString("description"),
                         locationType = hObj.optString("locationType"),
                         priceRange = hObj.optString("priceRange"),
-                        googleMapsQuery = hObj.optString("googleMapsQuery")
+                        googleMapsQuery = hObj.optString("googleMapsQuery"),
+                        priceValue = hObj.optInt("priceValue", 2500)
                     )
                 } else null
 
@@ -264,7 +283,8 @@ object SavedManager {
                     title = dayObj.optString("title"),
                     theme = dayObj.optString("theme"),
                     spots = spots,
-                    stayHotel = stay
+                    stayHotel = stay,
+                    multiStopRouteUrl = if (dayObj.has("multiStopRouteUrl") && !dayObj.isNull("multiStopRouteUrl")) dayObj.optString("multiStopRouteUrl") else null
                 )
 
                 list.add(
@@ -286,10 +306,14 @@ object SavedManager {
         return list
     }
 
-    fun saveDayItinerary(context: Context, cityName: String, day: DayItinerary): SavedDayItinerary {
+    fun saveDayItinerary(context: Context, cityName: String, day: DayItinerary): SavedDayItinerary? {
         val current = getDayItineraries(context).toMutableList()
         val existing = current.find { it.cityName == cityName && it.dayNumber == day.dayNumber && it.title == day.title }
         if (existing != null) return existing
+
+        if (current.size >= MAX_SAVED_ITEMS) {
+            return null
+        }
 
         val item = SavedDayItinerary(
             cityName = cityName,
@@ -330,6 +354,7 @@ object SavedManager {
                     put("dateLabel", item.day.dateLabel)
                     put("title", item.day.title)
                     put("theme", item.day.theme)
+                    put("multiStopRouteUrl", item.day.multiStopRouteUrl ?: JSONObject.NULL)
 
                     val spotsArr = JSONArray()
                     for (spot in item.day.spots) {
@@ -353,6 +378,7 @@ object SavedManager {
                             put("locationType", hotel.locationType)
                             put("priceRange", hotel.priceRange)
                             put("googleMapsQuery", hotel.googleMapsQuery)
+                            put("priceValue", hotel.priceValue)
                         })
                     }
                 }
@@ -391,10 +417,14 @@ object SavedManager {
         return list
     }
 
-    fun saveSpot(context: Context, cityName: String, name: String, intro: String, googleMapsQuery: String, duration: String = ""): SavedSpotItem {
+    fun saveSpot(context: Context, cityName: String, name: String, intro: String, googleMapsQuery: String, duration: String = ""): SavedSpotItem? {
         val current = getSavedSpots(context).toMutableList()
         val existing = current.find { it.cityName == cityName && it.name == name }
         if (existing != null) return existing
+
+        if (current.size >= MAX_SAVED_ITEMS) {
+            return null
+        }
 
         val item = SavedSpotItem(
             cityName = cityName,

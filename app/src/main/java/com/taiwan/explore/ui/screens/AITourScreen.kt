@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AITourScreen(
     initialCityName: String = "臺北市",
+    userLocationName: String? = null,
     language: AppLanguage = AppLanguage.ZH_TW
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -38,18 +39,39 @@ fun AITourScreen(
 
     var selectedCity by remember { mutableStateOf(initialCityName) }
     var selectedDays by remember { mutableStateOf(2) }
-    var selectedStyle by remember { mutableStateOf("山海自然放鬆") }
-    var selectedTransport by remember { mutableStateOf("自行開車 / 租車自駕") }
-    var selectedStayPref by remember { mutableStateOf("舒適質感商旅") }
-    var specialRequests by remember { mutableStateOf("") }
+    var selectedStyle by remember { mutableStateOf("休閒遊憩") }
+    var selectedTransport by remember { mutableStateOf("自行開車") }
+    var selectedStayPref by remember { mutableStateOf("經典舒適") }
+    var keepSameHotel by remember { mutableStateOf(true) }
 
     var isLoadingPlan by remember { mutableStateOf(false) }
     var generatedPlan by remember { mutableStateOf<ItineraryPlan?>(null) }
     var showPlanDialog by remember { mutableStateOf(false) }
+    var hasGeneratedOnce by remember { mutableStateOf(false) }
 
-    val styles = listOf("山海自然放鬆", "歷史文化古蹟", "在地排隊美食巡禮", "親子觀光工廠體驗", "文青藝術街區")
-    val transports = listOf("自行開車 / 租車自駕", "大眾運輸（高鐵/台鐵/客運捷運）", "機車雙載輕旅行")
-    val stayPrefs = listOf("頂級奢華度假", "舒適質感商旅", "平價青年旅舍 / 特色民宿")
+    // 4 Core Travel Styles (UI shows only clean titles, connotations are passed to AI backend)
+    val styles = listOf("休閒遊憩", "文化生活", "戶外漫遊", "美食尋味")
+
+    // Destination city object & Island check
+    val currentCityData = remember(selectedCity) {
+        TaiwanDataProvider.getCityByName(selectedCity) ?: TaiwanDataProvider.cities.first()
+    }
+    val isIslandCity = currentCityData.region == "離島"
+
+    // Transit options based on mainland vs island
+    val mainlandTransports = listOf("自行開車", "大眾運輸", "騎乘機車", "自行車漫遊")
+    val islandTransports = listOf("自行開車", "大眾運輸", "騎乘機車", "自行車漫遊", "輪船接駁", "飛機往返")
+    val availableTransports = if (isIslandCity) islandTransports else mainlandTransports
+
+    // Reset selectedTransport if it's invalid for mainland
+    LaunchedEffect(isIslandCity) {
+        if (!isIslandCity && (selectedTransport == "輪船接駁" || selectedTransport == "飛機往返")) {
+            selectedTransport = "自行開車"
+        }
+    }
+
+    // 3 Accommodation tiers
+    val stayPrefs = listOf("小資經濟", "經典舒適", "尊榮輕奢")
 
     fun triggerGenerate() {
         isLoadingPlan = true
@@ -61,9 +83,11 @@ fun AITourScreen(
                     style = selectedStyle,
                     transport = selectedTransport,
                     stayPreference = selectedStayPref,
-                    specialRequests = specialRequests
+                    keepSameHotel = keepSameHotel,
+                    userOrigin = userLocationName
                 )
                 generatedPlan = plan
+                hasGeneratedOnce = true
                 showPlanDialog = true
             } finally {
                 isLoadingPlan = false
@@ -90,7 +114,7 @@ fun AITourScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = strings.aiTourTitle,
+                        text = strings.tabAITour,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Slate900
@@ -105,7 +129,7 @@ fun AITourScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // 1. Destination City
+            // 1. Destination City with Regional Grouping
             Text(text = strings.selectCity, fontWeight = FontWeight.Bold, color = Slate800)
             Spacer(modifier = Modifier.height(6.dp))
             var cityExpanded by remember { mutableStateOf(false) }
@@ -122,7 +146,7 @@ fun AITourScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = getLocalizedCityName(selectedCity, language),
+                            text = "${currentCityData.region}・${getLocalizedCityName(selectedCity, language)}",
                             color = Slate800,
                             fontWeight = FontWeight.Bold
                         )
@@ -132,16 +156,27 @@ fun AITourScreen(
 
                 DropdownMenu(
                     expanded = cityExpanded,
-                    onDismissRequest = { cityExpanded = false }
+                    onDismissRequest = { cityExpanded = false },
+                    modifier = Modifier.heightIn(max = 400.dp)
                 ) {
-                    TaiwanDataProvider.cities.forEach { c ->
-                        DropdownMenuItem(
-                            text = { Text(getLocalizedCityName(c.name, language)) },
-                            onClick = {
-                                selectedCity = c.name
-                                cityExpanded = false
-                            }
+                    val regions = listOf("北部", "中部", "南部", "東部", "離島")
+                    regions.forEach { reg ->
+                        Text(
+                            text = "── $reg ──",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Teal800,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
+                        TaiwanDataProvider.cities.filter { it.region == reg }.forEach { c ->
+                            DropdownMenuItem(
+                                text = { Text(getLocalizedCityName(c.name, language), fontSize = 13.sp) },
+                                onClick = {
+                                    selectedCity = c.name
+                                    cityExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -174,25 +209,30 @@ fun AITourScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Travel Style
+            // 3. Travel Style (4 options without brackets)
             Text(text = strings.travelStyle, fontWeight = FontWeight.Bold, color = Slate800)
-            Column(modifier = Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                styles.chunked(3).forEach { rowStyles ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        rowStyles.forEach { s ->
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (selectedStyle == s) Teal700 else Slate100,
-                                modifier = Modifier.clickable { selectedStyle = s }
-                            ) {
-                                Text(
-                                    text = s,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    color = if (selectedStyle == s) Color.White else Slate700,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                styles.forEach { s ->
+                    val isSelected = selectedStyle == s
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isSelected) Teal700 else Slate100,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedStyle = s }
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
+                            Text(
+                                text = s,
+                                color = if (isSelected) Color.White else Slate700,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
                         }
                     }
                 }
@@ -200,78 +240,119 @@ fun AITourScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. Transport Method
+            // 4. Transport Method (Mainland vs Island)
             Text(text = strings.transportMethod, fontWeight = FontWeight.Bold, color = Slate800)
             Column(modifier = Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                transports.forEach { t ->
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedTransport == t) Teal50 else Color.White,
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (selectedTransport == t) Teal700 else Slate200
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedTransport = t }
+                availableTransports.chunked(2).forEach { rowTransports ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = t,
-                            modifier = Modifier.padding(10.dp),
-                            fontSize = 13.sp,
-                            color = if (selectedTransport == t) Teal800 else Slate700,
-                            fontWeight = if (selectedTransport == t) FontWeight.Bold else FontWeight.Normal
-                        )
+                        rowTransports.forEach { t ->
+                            val isSelected = selectedTransport == t
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) Teal50 else Color.White,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) Teal700 else Slate200
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { selectedTransport = t }
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = t,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) Teal800 else Slate700,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            // 5. Accommodation Preference (Hidden on 1-day trip)
+            if (selectedDays > 1) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(text = strings.stayPreference, fontWeight = FontWeight.Bold, color = Slate800)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    stayPrefs.forEach { sp ->
+                        val isSelected = selectedStayPref == sp
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) Teal50 else Color.White,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) Teal700 else Slate200
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedStayPref = sp }
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = sp,
+                                    fontSize = 13.sp,
+                                    color = if (isSelected) Teal800 else Slate700,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
 
-            // 5. Accommodation Preference
-            Text(text = strings.stayPreference, fontWeight = FontWeight.Bold, color = Slate800)
-            Column(modifier = Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                stayPrefs.forEach { sp ->
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedStayPref == sp) Teal50 else Color.White,
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (selectedStayPref == sp) Teal700 else Slate200
-                        ),
+                // For >= 3 days: Toggle for "維持原住宿" vs "不維持原住宿"
+                if (selectedDays >= 3) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = strings.keepSameHotel, fontWeight = FontWeight.Bold, color = Slate800, fontSize = 13.sp)
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedStayPref = sp }
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = sp,
-                            modifier = Modifier.padding(10.dp),
-                            fontSize = 13.sp,
-                            color = if (selectedStayPref == sp) Teal800 else Slate700,
-                            fontWeight = if (selectedStayPref == sp) FontWeight.Bold else FontWeight.Normal
-                        )
+                        listOf(true to strings.keepSameHotelYes, false to strings.keepSameHotelNo).forEach { (keep, label) ->
+                            val isSelected = keepSameHotel == keep
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) Teal100 else Slate100,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) Teal700 else Color.Transparent
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { keepSameHotel = keep }
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) Teal900 else Slate700,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 6. Special Requests
-            OutlinedTextField(
-                value = specialRequests,
-                onValueChange = { specialRequests = it },
-                label = { Text(strings.specialRequests) },
-                placeholder = { Text(strings.specialRequestsHint, fontSize = 12.sp) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 7. Submit Button
+            // 6. Submit Button (Switches to "再次生成行程規劃" if already generated)
             Button(
                 onClick = { triggerGenerate() },
-                colors = ButtonDefaults.buttonColors(containerColor = Teal700),
+                colors = ButtonDefaults.buttonColors(containerColor = if (hasGeneratedOnce) Amber600 else Teal700),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -279,7 +360,11 @@ fun AITourScreen(
             ) {
                 Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.generateBtn, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (hasGeneratedOnce) strings.regenerateBtn else strings.generateBtn,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(modifier = Modifier.height(80.dp))

@@ -28,7 +28,10 @@ import com.taiwan.explore.util.getStrings
 @Composable
 fun SettingsScreen(
     currentLanguage: AppLanguage,
-    onLanguageChange: (AppLanguage) -> Unit
+    onLanguageChange: (AppLanguage) -> Unit,
+    userLocationName: String? = null,
+    isLocationEnabled: Boolean = false,
+    onRequestLocation: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = getStrings(currentLanguage)
@@ -45,6 +48,56 @@ fun SettingsScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
+        // Section: Location Service
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (isLocationEnabled) Icons.Default.MyLocation else Icons.Default.LocationOff,
+                        contentDescription = null,
+                        tint = if (isLocationEnabled) Teal700 else Amber600
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = strings.locationRequestTitle,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Slate900
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "${strings.currentLocation}：${if (isLocationEnabled && userLocationName != null) userLocationName else strings.locationDisabled}",
+                    fontSize = 13.sp,
+                    color = if (isLocationEnabled) Teal800 else Slate600,
+                    fontWeight = if (isLocationEnabled) FontWeight.Bold else FontWeight.Normal
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onRequestLocation,
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isLocationEnabled) Teal700 else Amber600),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = strings.enableLocationInSettings,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
         // Section: Language Selection
         Card(
             shape = RoundedCornerShape(20.dp),
