@@ -1,5 +1,8 @@
 package com.taiwan.explore.ui.components
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,20 +21,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.taiwan.explore.data.SavedManager
 import com.taiwan.explore.model.Accommodation
 import com.taiwan.explore.model.CityData
 import com.taiwan.explore.ui.theme.*
+import com.taiwan.explore.util.AppLanguage
+import com.taiwan.explore.util.getLocalizedCityName
+import com.taiwan.explore.util.getStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CityDetailBottomSheet(
     city: CityData,
     onDismiss: () -> Unit,
-    onPlanItinerary: (days: Int, style: String) -> Unit
+    onPlanItinerary: (days: Int, style: String) -> Unit,
+    language: AppLanguage = AppLanguage.ZH_TW
 ) {
     val context = LocalContext.current
+    val strings = getStrings(language)
     var selectedTab by remember { mutableStateOf(0) } // 0: 地方特色, 1: 必遊景點, 2: 觀光工廠, 3: 住宿精選
-    val tabs = listOf("地方特色", "必遊景點", "觀光工廠", "住宿推薦")
+    var saveTrigger by remember { mutableStateOf(0) }
+
+    val tabs = listOf(
+        "地方特色",
+        strings.highlightsTitle,
+        strings.tourismFactoriesTitle,
+        strings.accommodationsTitle
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -52,8 +68,9 @@ fun CityDetailBottomSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = city.name,
+                        text = getLocalizedCityName(city.name, language),
                         style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
                         color = Slate900
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -72,7 +89,7 @@ fun CityDetailBottomSheet(
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "關閉")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = strings.close)
                 }
             }
 
@@ -149,49 +166,48 @@ fun CityDetailBottomSheet(
                         item {
                             SpecialtySection(
                                 icon = "🌾",
-                                title = "在地優質農產",
+                                title = strings.agriculturalProduce,
                                 content = city.agriculture
                             )
                         }
                         item {
                             SpecialtySection(
                                 icon = "🐟",
-                                title = "海洋漁業水產",
+                                title = strings.fisheryProduce,
                                 content = city.fishery
                             )
                         }
                         item {
                             SpecialtySection(
                                 icon = "🥩",
-                                title = "在地畜牧特產",
+                                title = strings.livestockProduce,
                                 content = city.livestock
                             )
                         }
                         item {
-                            Card(
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Teal50)
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Text(
-                                        text = "🍜 代表性排隊小吃",
-                                        fontWeight = FontWeight.Bold,
-                                        color = Teal800,
-                                        fontSize = 15.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = city.famousFood.joinToString(" • "),
-                                        color = Slate700,
-                                        fontSize = 13.sp
-                                    )
-                                }
+                            SpecialtySection(
+                                icon = "🍜",
+                                title = "在地必吃代表美食",
+                                content = city.famousFood.joinToString("、")
+                            )
+                        }
+                        city.islandNotice?.let { notice ->
+                            item {
+                                SpecialtySection(
+                                    icon = "✈️",
+                                    title = "離島往返交通指南",
+                                    content = notice
+                                )
                             }
                         }
                     }
 
                     1 -> { // 必遊景點
                         items(city.highlights) { spot ->
+                            val isSaved = remember(spot, saveTrigger) {
+                                SavedManager.isSpotSaved(context, city.name, spot.name)
+                            }
+
                             Card(
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = Slate50),
@@ -214,10 +230,34 @@ fun CityDetailBottomSheet(
                                             color = Slate600
                                         )
                                     }
+
+                                    IconButton(
+                                        onClick = {
+                                            if (isSaved) {
+                                                SavedManager.removeSpotByName(context, city.name, spot.name)
+                                            } else {
+                                                SavedManager.saveSpot(
+                                                    context = context,
+                                                    cityName = city.name,
+                                                    name = spot.name,
+                                                    intro = spot.intro,
+                                                    googleMapsQuery = spot.googleMapsQuery
+                                                )
+                                            }
+                                            saveTrigger++
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                            contentDescription = strings.saveSpot,
+                                            tint = if (isSaved) Color.Red else Slate400
+                                        )
+                                    }
+
                                     IconButton(onClick = { openGoogleMaps(context, spot.googleMapsQuery) }) {
                                         Icon(
                                             imageVector = Icons.Default.Directions,
-                                            contentDescription = "導航",
+                                            contentDescription = strings.openNavigation,
                                             tint = Teal700
                                         )
                                     }
@@ -230,7 +270,9 @@ fun CityDetailBottomSheet(
                         if (city.tourismFactories.isEmpty()) {
                             item {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text("暫無觀光工廠資料", color = Slate500)
@@ -238,6 +280,10 @@ fun CityDetailBottomSheet(
                             }
                         } else {
                             items(city.tourismFactories) { factory ->
+                                val isSaved = remember(factory, saveTrigger) {
+                                    SavedManager.isSpotSaved(context, city.name, factory.name)
+                                }
+
                                 Card(
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = Slate50),
@@ -260,10 +306,34 @@ fun CityDetailBottomSheet(
                                                 color = Slate600
                                             )
                                         }
+
+                                        IconButton(
+                                            onClick = {
+                                                if (isSaved) {
+                                                    SavedManager.removeSpotByName(context, city.name, factory.name)
+                                                } else {
+                                                    SavedManager.saveSpot(
+                                                        context = context,
+                                                        cityName = city.name,
+                                                        name = factory.name,
+                                                        intro = factory.intro,
+                                                        googleMapsQuery = factory.googleMapsQuery
+                                                    )
+                                                }
+                                                saveTrigger++
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                                contentDescription = strings.saveSpot,
+                                                tint = if (isSaved) Color.Red else Slate400
+                                            )
+                                        }
+
                                         IconButton(onClick = { openGoogleMaps(context, factory.googleMapsQuery) }) {
                                             Icon(
                                                 imageVector = Icons.Default.Directions,
-                                                contentDescription = "導航",
+                                                contentDescription = strings.openNavigation,
                                                 tint = Teal700
                                             )
                                         }
@@ -320,7 +390,7 @@ fun CityDetailBottomSheet(
                                     IconButton(onClick = { openGoogleMaps(context, hotel.googleMapsQuery) }) {
                                         Icon(
                                             imageVector = Icons.Default.Directions,
-                                            contentDescription = "導航",
+                                            contentDescription = strings.openNavigation,
                                             tint = Teal700
                                         )
                                     }
@@ -360,4 +430,10 @@ fun SpecialtySection(icon: String, title: String, content: String) {
             )
         }
     }
+}
+
+private fun openGoogleMaps(context: Context, query: String) {
+    val encoded = Uri.encode(query)
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$encoded"))
+    context.startActivity(intent)
 }

@@ -17,7 +17,8 @@ class GeminiPlanService {
         days: Int,
         style: String,
         transport: String,
-        specialRequests: String
+        stayPreference: String = "舒適質感商旅",
+        specialRequests: String = ""
     ): ItineraryPlan = withContext(Dispatchers.IO) {
         val city = TaiwanDataProvider.getCityByName(cityName)
             ?: TaiwanDataProvider.cities.first()
@@ -28,6 +29,7 @@ class GeminiPlanService {
             請針對【${city.name}】規劃 ${days} 天的完整行程。
             旅遊風格：${style}
             交通方式：${transport}
+            住宿偏好：${stayPreference}
             特別需求：${specialRequests.ifEmpty { "無" }}
             
             輸出規則：
@@ -79,7 +81,7 @@ class GeminiPlanService {
         }
 
         // Fallback to high-quality curated itinerary based on the city's verified local highlights
-        return@withContext generateCuratedPlan(city.name, days, style, city.islandNotice)
+        return@withContext generateCuratedPlan(city.name, days, style, stayPreference, city.islandNotice)
     }
 
     private fun callGeminiRestApi(apiKey: String, prompt: String): String {
@@ -188,6 +190,7 @@ class GeminiPlanService {
         cityName: String,
         days: Int,
         style: String,
+        stayPreference: String,
         islandNotice: String?
     ): ItineraryPlan {
         val city = TaiwanDataProvider.getCityByName(cityName)
@@ -196,6 +199,15 @@ class GeminiPlanService {
         val dayList = mutableListOf<DayItinerary>()
         val highlights = city.highlights
         val totalHighlights = highlights.size
+
+        // Select hotel matching stay preference if possible
+        val matchingHotel = city.accommodations.find {
+            when {
+                stayPreference.contains("奢華") -> it.tier == "luxury"
+                stayPreference.contains("平價") || stayPreference.contains("青旅") -> it.tier == "budget"
+                else -> it.tier == "standard"
+            }
+        } ?: city.accommodations.firstOrNull()
 
         for (d in 1..days) {
             val startIndex = ((d - 1) * 3) % totalHighlights
@@ -219,7 +231,7 @@ class GeminiPlanService {
                 )
             }
 
-            val stayHotel = city.accommodations.getOrNull((d - 1) % city.accommodations.size)
+            val stayHotel = matchingHotel ?: city.accommodations.getOrNull((d - 1) % city.accommodations.size)
 
             dayList.add(
                 DayItinerary(
@@ -228,7 +240,9 @@ class GeminiPlanService {
                     title = when (d) {
                         1 -> "${city.name}經典風華巡禮"
                         2 -> "山海風貌與在地美饌深度漫遊"
-                        else -> "私房秘境與伴手禮探訪"
+                        3 -> "在地文化走讀與特色工藝體驗"
+                        4 -> "秘境探幽與自然生態漫步"
+                        else -> "慢活悠閒品味與名產伴手禮探訪"
                     },
                     theme = style,
                     spots = spotsForDay,
