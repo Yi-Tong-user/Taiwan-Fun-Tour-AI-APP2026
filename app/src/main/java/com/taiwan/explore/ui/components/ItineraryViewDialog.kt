@@ -357,15 +357,12 @@ fun ItineraryViewDialog(
                                 }
                             }
 
-                                }
-                            }
-
                             // Daily "開啟多點行程路線 🗺️" Button
-                            day.multiStopRouteUrl?.let { routeUrl ->
+                            if (day.multiStopRouteUrl.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(10.dp))
                                 OutlinedButton(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(routeUrl))
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(day.multiStopRouteUrl))
                                         context.startActivity(intent)
                                     },
                                     shape = RoundedCornerShape(10.dp),

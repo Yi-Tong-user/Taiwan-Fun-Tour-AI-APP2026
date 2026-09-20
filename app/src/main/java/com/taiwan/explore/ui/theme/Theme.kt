@@ -48,7 +48,18 @@ val Amber900 = Color(0xFF78350F)
 val Blue50 = Color(0xFFEFF6FF)
 val Blue100 = Color(0xFFDBEAFE)
 val Blue600 = Color(0xFF2563EB)
+val Blue800 = Color(0xFF1E40AF)
 val Rose600 = Color(0xFFE11D48)
+
+// Emerald Palette
+val Emerald50 = Color(0xFFECFDF5)
+val Emerald100 = Color(0xFFD1FAE5)
+val Emerald200 = Color(0xFFA7F3D0)
+val Emerald500 = Color(0xFF10B981)
+val Emerald600 = Color(0xFF059669)
+val Emerald700 = Color(0xFF047857)
+val Emerald800 = Color(0xFF065F46)
+val Emerald900 = Color(0xFF064E3B)
 
 val TaiwanColorScheme = lightColorScheme(
     primary = Teal700,

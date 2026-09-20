@@ -203,7 +203,7 @@ class GeminiPlanService {
                         theme = dayTheme,
                         spots = spotsList,
                         stayHotel = stay,
-                        multiStopRouteUrl = multiRouteUrl
+                        multiStopRouteUrl = multiRouteUrl ?: ""
                     )
                 )
             }
@@ -302,7 +302,7 @@ class GeminiPlanService {
                     theme = style,
                     spots = spotsForDay,
                     stayHotel = stayHotel,
-                    multiStopRouteUrl = multiRouteUrl
+                    multiStopRouteUrl = multiRouteUrl ?: ""
                 )
             )
         }

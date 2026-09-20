@@ -188,7 +188,7 @@ fun TaiwanExploreApp() {
                             unselectedIconColor = Slate500,
                             unselectedTextColor = Slate500
                         )
-                    }
+                    )
 
                     // 2. 推薦
                     NavigationBarItem(
@@ -203,7 +203,7 @@ fun TaiwanExploreApp() {
                             unselectedIconColor = Slate500,
                             unselectedTextColor = Slate500
                         )
-                    }
+                    )
 
                     // 3. AI旅程
                     NavigationBarItem(
@@ -218,7 +218,7 @@ fun TaiwanExploreApp() {
                             unselectedIconColor = Slate500,
                             unselectedTextColor = Slate500
                         )
-                    }
+                    )
 
                     // 4. 收藏
                     NavigationBarItem(
@@ -233,7 +233,7 @@ fun TaiwanExploreApp() {
                             unselectedIconColor = Slate500,
                             unselectedTextColor = Slate500
                         )
-                    }
+                    )
 
                     // 5. 設定
                     NavigationBarItem(
@@ -248,7 +248,7 @@ fun TaiwanExploreApp() {
                             unselectedIconColor = Slate500,
                             unselectedTextColor = Slate500
                         )
-                    }
+                    )
                 }
             }
         ) { innerPadding ->

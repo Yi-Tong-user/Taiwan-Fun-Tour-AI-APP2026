@@ -9,7 +9,10 @@ data class Spot(
     val startHour: Int = 8,
     val endHour: Int = 18,
     val isNightOnly: Boolean = false
-)
+) {
+    val districts: List<String>
+        get() = if (district.isNotBlank()) listOf(district) else emptyList()
+}
 
 data class TourismFactory(
     val name: String,
@@ -77,6 +80,6 @@ data class ItineraryPlan(
     val style: String,
     val days: List<DayItinerary>,
     val islandNotice: String? = null,
-    val returnTransitGuide: String? = null,
-    val returnNavQuery: String? = null
+    val returnNavigationUrl: String? = null,
+    val returnTransitGuide: String? = null
 )

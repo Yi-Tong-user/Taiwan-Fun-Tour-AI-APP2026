@@ -105,7 +105,7 @@ object SavedManager {
                             theme = dObj.optString("theme"),
                             spots = spots,
                             stayHotel = stay,
-                            multiStopRouteUrl = if (dObj.has("multiStopRouteUrl") && !dObj.isNull("multiStopRouteUrl")) dObj.optString("multiStopRouteUrl") else null
+                            multiStopRouteUrl = dObj.optString("multiStopRouteUrl", "")
                         )
                     )
                 }
@@ -284,7 +284,7 @@ object SavedManager {
                     theme = dayObj.optString("theme"),
                     spots = spots,
                     stayHotel = stay,
-                    multiStopRouteUrl = if (dayObj.has("multiStopRouteUrl") && !dayObj.isNull("multiStopRouteUrl")) dayObj.optString("multiStopRouteUrl") else null
+                    multiStopRouteUrl = dayObj.optString("multiStopRouteUrl", "")
                 )
 
                 list.add(

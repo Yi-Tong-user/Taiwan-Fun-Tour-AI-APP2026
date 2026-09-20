@@ -68,6 +68,10 @@ fun RecommendScreen(
     var expandedFactories by remember(selectedCity) { mutableStateOf(false) }
     var expandedAccommodations by remember(selectedCity) { mutableStateOf(false) }
 
+    val sortedAccommodations = remember(selectedCity) {
+        selectedCity.accommodations.sortedByDescending { it.priceValue }
+    }
+
     val categoryTabs = listOf(
         strings.highlightsTitle,
         strings.tourismFactoriesTitle,
@@ -261,9 +265,6 @@ fun RecommendScreen(
                 }
                 2 -> {
                     // Accommodations: Sorted High-to-Low by priceValue, 5 default + "顯示更多"
-                    val sortedAccommodations = remember(selectedCity) {
-                        selectedCity.accommodations.sortedByDescending { it.priceValue }
-                    }
                     val accsToShow = if (expandedAccommodations) sortedAccommodations else sortedAccommodations.take(5)
 
                     items(accsToShow) { acc ->

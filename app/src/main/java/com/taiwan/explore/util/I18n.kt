@@ -135,7 +135,9 @@ data class Strings(
     val enableLocationInSettings: String,
     val currentLocation: String,
     val locating: String,
-    val locationDisabled: String
+    val locationDisabled: String,
+    val specialRequests: String,
+    val specialRequestsHint: String
 )
 
 val zhTwStrings = Strings(
@@ -236,7 +238,9 @@ val zhTwStrings = Strings(
     enableLocationInSettings = "開啟定位功能",
     currentLocation = "目前位置",
     locating = "定位中...",
-    locationDisabled = "未開啟定位"
+    locationDisabled = "未開啟定位",
+    specialRequests = "特殊需求或偏好 (選填)",
+    specialRequestsHint = "例如：帶長輩同行、喜歡無障礙設施、想吃在地素食..."
 )
 
 val enStrings = Strings(
@@ -337,7 +341,9 @@ val enStrings = Strings(
     enableLocationInSettings = "Enable Location Service",
     currentLocation = "Current Location",
     locating = "Locating...",
-    locationDisabled = "Location Disabled"
+    locationDisabled = "Location Disabled",
+    specialRequests = "Special Requests (Optional)",
+    specialRequestsHint = "e.g., traveling with elders, wheelchair accessible, local vegetarian..."
 )
 
 val jaStrings = Strings(
@@ -438,7 +444,9 @@ val jaStrings = Strings(
     enableLocationInSettings = "位置情報サービスを有効にする",
     currentLocation = "現在地",
     locating = "現在地を取得中...",
-    locationDisabled = "位置情報未取得"
+    locationDisabled = "位置情報未取得",
+    specialRequests = "特別な要望（任意）",
+    specialRequestsHint = "例：高齢者同行、バリアフリー希望、ベジタリアン料理..."
 )
 
 fun getStrings(lang: AppLanguage): Strings {
