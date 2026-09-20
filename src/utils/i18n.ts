@@ -120,6 +120,10 @@ export interface Translations {
   penghuBoxTitle: string;
   pacificIslandsTitle: string;
   liuqiuBoxTitle: string;
+  liuqiuFeatures: string;
+  removeSaved: string;
+  saveItinerary: string;
+  saveDayItinerary: string;
   userLocationMarker: string;
   stoppedCityPrompt: string;
   stoppedCityClickDetail: string;
@@ -291,6 +295,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     penghuBoxTitle: '澎湖縣（群島）',
     pacificIslandsTitle: '綠島・蘭嶼（臺東外海離島）',
     liuqiuBoxTitle: '琉球嶼（小琉球・珊瑚礁島）',
+    liuqiuFeatures: '綠蠵龜・花瓶石・白沙觀光港',
+    removeSaved: '取消收藏',
+    saveItinerary: '收藏此行程',
+    saveDayItinerary: '收藏當天行程',
     userLocationMarker: '📍 您的目前位置',
     stoppedCityPrompt: '🎲 幸運選定旅遊城市',
     stoppedCityClickDetail: '點擊開啟詳細介紹與客製行程 ➔',
@@ -458,6 +466,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     penghuBoxTitle: 'Penghu Archipelago',
     pacificIslandsTitle: 'Green Island & Orchid Island (Taitung)',
     liuqiuBoxTitle: 'Xiaoliuqiu (Coral Reef Island)',
+    liuqiuFeatures: 'Sea Turtles · Vase Rock · Baisha Port',
+    removeSaved: 'Remove from Saved',
+    saveItinerary: 'Save Full Itinerary',
+    saveDayItinerary: 'Save This Day',
     userLocationMarker: '📍 Your Current Location',
     stoppedCityPrompt: '🎲 Selected Destination',
     stoppedCityClickDetail: 'Click to view details & customize trip ➔',
@@ -625,6 +637,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     penghuBoxTitle: '澎湖県（諸島）',
     pacificIslandsTitle: '緑島・蘭嶼（台東沖離島）',
     liuqiuBoxTitle: '小琉球（サンゴ礁の島）',
+    liuqiuFeatures: 'ウミガメ・花瓶岩・白沙観光港',
+    removeSaved: '保存を解除',
+    saveItinerary: 'この日程を保存',
+    saveDayItinerary: 'この日の日程を保存',
     userLocationMarker: '📍 あなたの現在地',
     stoppedCityPrompt: '🎲 おすすめの観光地が決定！',
     stoppedCityClickDetail: 'タップして詳細と旅行プランを見る ➔',

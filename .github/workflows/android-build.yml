@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Debug APK
@@ -41,3 +44,16 @@ jobs:
           path: |
             app/build/outputs/apk/debug/*.apk
             dist/
+
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: latest
+          name: "Taiwan Explore App (Latest APK)"
+          body: "🇹🇼 最新版 Android APK 安裝檔！點擊下方 Assets 中的 APK 檔案即可直接下載安裝到 Android 手機。"
+          files: app/build/outputs/apk/debug/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
