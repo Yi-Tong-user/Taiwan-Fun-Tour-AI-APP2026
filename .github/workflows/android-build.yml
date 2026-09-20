@@ -28,18 +28,20 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Prepare Environment & Licenses
+      - name: Prepare Environment & Gradle Wrapper
         run: |
-          if [ -f ".env.example" ]; then
-            cp .env.example .env
-            cp .env.example app/.env 2>/dev/null || true
+          mkdir -p gradle/wrapper
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            curl -sLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar
           fi
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "sdk.dir=$ANDROID_HOME" > app/local.properties 2>/dev/null || true
-          yes | sdkmanager --licenses || true
+          sed -i 's/\r$//' ./gradlew
+          chmod +x ./gradlew
 
       - name: Build APK with Gradle
-        run: gradle :app:assembleDebug --no-daemon --stacktrace --info
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload Build Reports on Failure
         if: failure()
