@@ -201,8 +201,8 @@ fun RecommendScreen(
                             modifier = Modifier.clickable {
                                 selectedCity = city
                                 expandedSpots = false
-                                expandedFactories = false
-                                expandedAccommodations = false
+                                visibleFactoryCount = 5
+                                visibleAccCount = 5
                             }
                         ) {
                             Text(

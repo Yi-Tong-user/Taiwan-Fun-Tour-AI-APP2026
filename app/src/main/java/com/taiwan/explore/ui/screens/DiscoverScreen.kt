@@ -35,7 +35,7 @@ import com.taiwan.explore.util.getStrings
 fun DiscoverScreen(
     onSelectCity: (CityData) -> Unit,
     activeCityName: String = "臺北市",
-    userLocation: Location? = null,
+    userLocation: com.google.android.gms.maps.model.LatLng? = null,
     language: AppLanguage = AppLanguage.ZH_TW
 ) {
     val context = LocalContext.current
