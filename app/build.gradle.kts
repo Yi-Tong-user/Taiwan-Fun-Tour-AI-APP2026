@@ -15,8 +15,10 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        manifestPlaceholders["MAPS_API_KEY"] = (project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: "").toString()
-        buildConfigField("String", "GEMINI_API_KEY", "\"${project.findProperty("GEMINI_API_KEY") ?: System.getenv("GEMINI_API_KEY") ?: ""}\"")
+        val mapsKey = (project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: "").toString().replace("\"", "")
+        val geminiKey = (project.findProperty("GEMINI_API_KEY") ?: System.getenv("GEMINI_API_KEY") ?: "").toString().replace("\"", "")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsKey
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
