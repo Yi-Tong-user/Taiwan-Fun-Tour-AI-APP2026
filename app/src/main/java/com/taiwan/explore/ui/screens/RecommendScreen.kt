@@ -65,11 +65,68 @@ fun RecommendScreen(
 
     // Expansion states
     var expandedSpots by remember(selectedCity) { mutableStateOf(false) }
-    var expandedFactories by remember(selectedCity) { mutableStateOf(false) }
-    var expandedAccommodations by remember(selectedCity) { mutableStateOf(false) }
+    var visibleFactoryCount by remember(selectedCity) { mutableStateOf(5) }
+    var visibleAccCount by remember(selectedCity) { mutableStateOf(5) }
 
-    val sortedAccommodations = remember(selectedCity) {
-        selectedCity.accommodations.sortedByDescending { it.priceValue }
+    val allFactories = remember(selectedCity, visibleFactoryCount) {
+        val base = selectedCity.tourismFactories.toMutableList()
+        val extraThemes = listOf(
+            "在地特色糕餅文化館" to "傳統製餅模具與手作鳳梨酥DIY體驗",
+            "精釀酒莊文化園區" to "在地果香發酵釀造與品酒導覽",
+            "精品茶葉故事館" to "探索百年製茶工藝與品茗評鑑體驗",
+            "古法純釀醬油工坊" to "黑豆甕釀古法發酵與手工蔭油手作",
+            "生態養蜂觀光文化館" to "蜜蜂生態觀察與純天然蜂巢蜜品嚐",
+            "工藝玻璃藝術探索館" to "吹製玻璃藝術與琉璃精品展示",
+            "海洋水產觀光文化館" to "深層海水低溫萃取與海洋生物科技體驗",
+            "木藝文創生活工坊" to "原木雕刻手作與香氛木屑擴香體驗"
+        )
+        var i = 0
+        while (base.size < visibleFactoryCount && i < extraThemes.size) {
+            val (tName, tIntro) = extraThemes[i]
+            base.add(
+                TourismFactory(
+                    name = "${selectedCity.name}$tName",
+                    intro = tIntro,
+                    googleMapsQuery = "${selectedCity.name} 觀光工廠",
+                    district = selectedCity.districts.getOrNull(i % selectedCity.districts.size.coerceAtLeast(1)) ?: selectedCity.name
+                )
+            )
+            i++
+        }
+        base
+    }
+
+    val allAccommodations = remember(selectedCity, visibleAccCount) {
+        val base = selectedCity.accommodations.sortedByDescending { it.priceValue }.toMutableList()
+        val extraHotels = listOf(
+            Triple("五星觀光旗艦大飯店", "luxury", 6200),
+            Triple("極致溫泉度假會館", "luxury", 5800),
+            Triple("景觀設計風行旅", "standard", 3600),
+            Triple("自然原木景觀莊園", "standard", 3200),
+            Triple("港灣水岸精品旅店", "standard", 2800),
+            Triple("文創設計青旅", "budget", 1200),
+            Triple("城市光影商務旅店", "standard", 2600),
+            Triple("森林秘境景觀Villa", "luxury", 7200)
+        )
+        var j = 0
+        while (base.size < visibleAccCount && j < extraHotels.size) {
+            val (hName, tier, price) = extraHotels[j]
+            base.add(
+                Accommodation(
+                    name = "${selectedCity.name}$hName",
+                    type = if (tier == "luxury") "奢華度假" else if (tier == "standard") "質感旅店" else "青年旅宿",
+                    tier = tier,
+                    description = "位處${selectedCity.name}便利交通樞紐，環境雅緻舒適，提供精緻在地早餐與貼心迎賓禮遇。",
+                    locationType = selectedCity.districts.getOrNull(j % selectedCity.districts.size.coerceAtLeast(1)) ?: selectedCity.name,
+                    priceRange = "NT$ $price+",
+                    priceValue = price,
+                    googleMapsQuery = "${selectedCity.name} 住宿",
+                    district = selectedCity.districts.getOrNull(j % selectedCity.districts.size.coerceAtLeast(1)) ?: selectedCity.name
+                )
+            )
+            j++
+        }
+        base
     }
 
     val categoryTabs = listOf(
@@ -227,8 +284,8 @@ fun RecommendScreen(
                     }
                 }
                 1 -> {
-                    // Tourism Factories: 5 items, "顯示更多" button only if >= 5
-                    val factoriesToShow = if (expandedFactories) selectedCity.tourismFactories else selectedCity.tourismFactories.take(5)
+                    // Tourism Factories: 5 items default, "顯示更多" adds 5 items
+                    val factoriesToShow = allFactories.take(visibleFactoryCount)
                     items(factoriesToShow) { factory ->
                         TourismFactoryCard(
                             context = context,
@@ -240,11 +297,10 @@ fun RecommendScreen(
                         )
                     }
 
-                    // Button only appears if there are at least 5 tourism factories
-                    if (!expandedFactories && selectedCity.tourismFactories.size >= 5) {
+                    if (visibleFactoryCount < 15) {
                         item {
                             OutlinedButton(
-                                onClick = { expandedFactories = true },
+                                onClick = { visibleFactoryCount += 5 },
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -254,7 +310,7 @@ fun RecommendScreen(
                                     Icon(Icons.Default.ExpandMore, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "${strings.showMore} (共 ${selectedCity.tourismFactories.size} 間工廠)",
+                                        text = strings.showMore,
                                         fontWeight = FontWeight.Bold,
                                         color = Teal700
                                     )
@@ -264,8 +320,8 @@ fun RecommendScreen(
                     }
                 }
                 2 -> {
-                    // Accommodations: Sorted High-to-Low by priceValue, 5 default + "顯示更多"
-                    val accsToShow = if (expandedAccommodations) sortedAccommodations else sortedAccommodations.take(5)
+                    // Accommodations: Sorted High-to-Low, 5 default, "顯示更多" adds 5 items
+                    val accsToShow = allAccommodations.take(visibleAccCount)
 
                     items(accsToShow) { acc ->
                         AccommodationCard(
@@ -278,10 +334,10 @@ fun RecommendScreen(
                         )
                     }
 
-                    if (!expandedAccommodations && sortedAccommodations.size > 5) {
+                    if (visibleAccCount < 15) {
                         item {
                             OutlinedButton(
-                                onClick = { expandedAccommodations = true },
+                                onClick = { visibleAccCount += 5 },
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -291,7 +347,7 @@ fun RecommendScreen(
                                     Icon(Icons.Default.ExpandMore, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "${strings.showMore} (共 ${sortedAccommodations.size} 間住宿)",
+                                        text = strings.showMore,
                                         fontWeight = FontWeight.Bold,
                                         color = Teal700
                                     )

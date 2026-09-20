@@ -479,7 +479,8 @@ fun SavedScreen(
             ItineraryViewDialog(
                 plan = plan,
                 onDismiss = { selectedPlanForView = null },
-                onRegenerate = { selectedPlanForView = null },
+                onRegenerate = null,
+                showRegenerate = false,
                 language = language
             )
         }

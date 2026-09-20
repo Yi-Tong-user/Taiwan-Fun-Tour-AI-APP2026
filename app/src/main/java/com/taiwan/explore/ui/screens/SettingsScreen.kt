@@ -31,7 +31,8 @@ fun SettingsScreen(
     onLanguageChange: (AppLanguage) -> Unit,
     userLocationName: String? = null,
     isLocationEnabled: Boolean = false,
-    onRequestLocation: () -> Unit = {}
+    onRequestLocation: () -> Unit = {},
+    onToggleLocation: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = getStrings(currentLanguage)
@@ -48,7 +49,7 @@ fun SettingsScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // Section: Location Service
+        // Section: Location Permission & Status
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -58,7 +59,7 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (isLocationEnabled) Icons.Default.MyLocation else Icons.Default.LocationOff,
+                        imageVector = if (isLocationEnabled) Icons.Default.LocationOn else Icons.Default.LocationOff,
                         contentDescription = null,
                         tint = if (isLocationEnabled) Teal700 else Amber600
                     )
@@ -71,6 +72,15 @@ fun SettingsScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = strings.locationRequestPrivacy,
+                    fontSize = 12.sp,
+                    color = Slate600,
+                    lineHeight = 17.sp
+                )
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
@@ -82,19 +92,36 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Button(
-                    onClick = onRequestLocation,
-                    colors = ButtonDefaults.buttonColors(containerColor = if (isLocationEnabled) Teal700 else Amber600),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = strings.enableLocationInSettings,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
+                if (isLocationEnabled) {
+                    Button(
+                        onClick = onToggleLocation,
+                        colors = ButtonDefaults.buttonColors(containerColor = Teal700),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${strings.locationEnabled} (${strings.disableLocation})",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = onRequestLocation,
+                        colors = ButtonDefaults.buttonColors(containerColor = Amber600),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = strings.enableLocationInSettings,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
         }

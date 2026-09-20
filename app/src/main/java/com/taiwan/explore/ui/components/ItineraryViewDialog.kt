@@ -32,7 +32,8 @@ import com.taiwan.explore.util.getStrings
 fun ItineraryViewDialog(
     plan: ItineraryPlan,
     onDismiss: () -> Unit,
-    onRegenerate: () -> Unit,
+    onRegenerate: (() -> Unit)? = null,
+    showRegenerate: Boolean = true,
     language: AppLanguage = AppLanguage.ZH_TW
 ) {
     val context = LocalContext.current
@@ -108,7 +109,7 @@ fun ItineraryViewDialog(
                         containerColor = if (isFullSaved) Amber600 else Teal700
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1.2f)
+                    modifier = Modifier.weight(if (showRegenerate && onRegenerate != null) 1.2f else 1f)
                 ) {
                     Icon(
                         imageVector = if (isFullSaved) Icons.Default.BookmarkAdded else Icons.Default.BookmarkAdd,
@@ -123,25 +124,53 @@ fun ItineraryViewDialog(
                     )
                 }
 
-                // Regenerate UI Button
-                OutlinedButton(
-                    onClick = onRegenerate,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal800),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Teal600),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(strings.regenerateBtn, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                // Regenerate UI Button (hidden when viewed from Saved)
+                if (showRegenerate && onRegenerate != null) {
+                    OutlinedButton(
+                        onClick = onRegenerate,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal800),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Teal600),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(strings.regenerateBtn, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
+
+            // Transit Warning if present
+            plan.transitWarning?.let { warning ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Amber50,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Amber300),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Amber800)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = warning,
+                            fontSize = 12.sp,
+                            color = Amber900,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             // Island Notice if present
             plan.islandNotice?.let { notice ->
@@ -195,7 +224,7 @@ fun ItineraryViewDialog(
                                         color = Slate900
                                     )
                                     Text(
-                                        text = "主題：${day.theme}",
+                                        text = day.theme,
                                         fontSize = 12.sp,
                                         color = Teal700,
                                         fontWeight = FontWeight.Medium
@@ -374,57 +403,59 @@ fun ItineraryViewDialog(
                                 }
                             }
 
-                            // Stay Hotel if present
-                            day.stayHotel?.let { hotel ->
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.White,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                            // Stay Hotel (Only displayed if NOT the final day of the trip)
+                            if (day.dayNumber < plan.daysCount) {
+                                day.stayHotel?.let { hotel ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White,
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate200),
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Hotel,
-                                            contentDescription = null,
-                                            tint = Teal700,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "${strings.stayHotel}：${hotel.name}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                color = Slate800
-                                            )
-                                            Text(
-                                                text = "${hotel.type} · ${hotel.priceRange}",
-                                                fontSize = 11.sp,
-                                                color = Slate500
-                                            )
-                                        }
-
-                                        IconButton(
-                                            onClick = {
-                                                val query = Uri.encode(hotel.googleMapsQuery)
-                                                val intent = Intent(
-                                                    Intent.ACTION_VIEW,
-                                                    Uri.parse("https://www.google.com/maps/search/?api=1&query=$query")
-                                                )
-                                                context.startActivity(intent)
-                                            },
-                                            modifier = Modifier.size(32.dp)
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.Directions,
-                                                contentDescription = strings.openNavigation,
+                                                imageVector = Icons.Default.Hotel,
+                                                contentDescription = null,
                                                 tint = Teal700,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "${strings.stayHotel}：${hotel.name}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Slate800
+                                                )
+                                                Text(
+                                                    text = "${hotel.type} · ${hotel.priceRange}",
+                                                    fontSize = 11.sp,
+                                                    color = Slate500
+                                                )
+                                            }
+
+                                            IconButton(
+                                                onClick = {
+                                                    val query = Uri.encode(hotel.googleMapsQuery)
+                                                    val intent = Intent(
+                                                        Intent.ACTION_VIEW,
+                                                        Uri.parse("https://www.google.com/maps/search/?api=1&query=$query")
+                                                    )
+                                                    context.startActivity(intent)
+                                                },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Directions,
+                                                    contentDescription = strings.openNavigation,
+                                                    tint = Teal700,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -463,6 +494,7 @@ fun ItineraryViewDialog(
 
                             plan.returnNavigationUrl?.let { navUrl ->
                                 Spacer(modifier = Modifier.height(10.dp))
+                                // 返程導航按鈕 (無額外Icon)
                                 Button(
                                     onClick = {
                                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(navUrl))

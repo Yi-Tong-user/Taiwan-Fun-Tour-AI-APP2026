@@ -81,5 +81,6 @@ data class ItineraryPlan(
     val days: List<DayItinerary>,
     val islandNotice: String? = null,
     val returnNavigationUrl: String? = null,
-    val returnTransitGuide: String? = null
+    val returnTransitGuide: String? = null,
+    val transitWarning: String? = null
 )

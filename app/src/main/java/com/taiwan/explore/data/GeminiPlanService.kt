@@ -86,7 +86,7 @@ class GeminiPlanService {
         if (apiKey.isNotEmpty() && apiKey != "your_api_key_here") {
             try {
                 val responseJson = callGeminiRestApi(apiKey, prompt)
-                val parsed = parsePlanJson(responseJson, city.name, days, style, city.islandNotice, keepSameHotel, stayPreference, userOrigin)
+                val parsed = parsePlanJson(responseJson, city.name, days, style, city.islandNotice, keepSameHotel, stayPreference, userOrigin, transport)
                 if (parsed != null) return@withContext parsed
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -94,7 +94,7 @@ class GeminiPlanService {
         }
 
         // Fallback to high-quality curated itinerary based on the city's verified local highlights
-        return@withContext generateCuratedPlan(city.name, days, style, stayPreference, keepSameHotel, city.islandNotice, userOrigin)
+        return@withContext generateCuratedPlan(city.name, days, style, stayPreference, keepSameHotel, city.islandNotice, userOrigin, transport)
     }
 
     private fun callGeminiRestApi(apiKey: String, prompt: String): String {
@@ -141,7 +141,8 @@ class GeminiPlanService {
         islandNotice: String?,
         keepSameHotel: Boolean,
         stayPreference: String,
-        userOrigin: String?
+        userOrigin: String?,
+        transport: String = "自行開車"
     ): ItineraryPlan? {
         try {
             val cleaned = jsonString.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
@@ -183,8 +184,8 @@ class GeminiPlanService {
                     )
                 }
 
-                // Decide stay hotel
-                val stay = if (daysCount > 1 && i < daysCount) {
+                // Decide stay hotel (last day does NOT show accommodation)
+                val stay = if (daysCount > 1 && i < daysCount - 1) {
                     if (keepSameHotel) {
                         matchingHotel
                     } else {
@@ -215,6 +216,10 @@ class GeminiPlanService {
                 "https://www.google.com/maps/dir/?api=1&origin=${java.net.URLEncoder.encode(lastSpot.googleMapsKeyword, "UTF-8")}&destination=${java.net.URLEncoder.encode(dest, "UTF-8")}&travelmode=driving"
             } else null
 
+            val transitWarning = if (transport != "自行開車") {
+                "旅行規劃部分路線景點距離較遠或無直達班次，無法完全使用您當前選擇的「$transport」旅遊，因此建議改用「自行開車」作為交通工具。"
+            } else null
+
             return ItineraryPlan(
                 title = title,
                 cityName = cityName,
@@ -223,7 +228,8 @@ class GeminiPlanService {
                 days = daysList,
                 islandNotice = islandNotice,
                 returnNavigationUrl = returnNavUrl,
-                returnTransitGuide = returnTransitGuide
+                returnTransitGuide = returnTransitGuide,
+                transitWarning = transitWarning
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -238,7 +244,8 @@ class GeminiPlanService {
         stayPreference: String,
         keepSameHotel: Boolean,
         islandNotice: String?,
-        userOrigin: String?
+        userOrigin: String?,
+        transport: String = "自行開車"
     ): ItineraryPlan {
         val city = TaiwanDataProvider.getCityByName(cityName)
             ?: TaiwanDataProvider.cities.first()
@@ -256,8 +263,11 @@ class GeminiPlanService {
             }
         } ?: city.accommodations.firstOrNull()
 
+        // Time-based offset ensures regeneration visits different attractions & districts
+        val offset = ((System.currentTimeMillis() / 1000) % totalHighlights.coerceAtLeast(1)).toInt()
+
         for (d in 1..days) {
-            val startIndex = ((d - 1) * 3) % totalHighlights
+            val startIndex = (offset + (d - 1) * 3) % totalHighlights
             val spotsForDay = mutableListOf<PlannedSpot>()
 
             val timeSlots = listOf("09:30 - 11:30", "13:00 - 15:00", "15:30 - 17:30", "18:30 - 20:30")
@@ -278,11 +288,12 @@ class GeminiPlanService {
                 )
             }
 
-            val stayHotel = if (days > 1) {
+            // Decide stay hotel (last day does NOT show accommodation)
+            val stayHotel = if (days > 1 && d < days) {
                 if (keepSameHotel) {
                     matchingHotel
                 } else {
-                    city.accommodations.getOrNull((d - 1) % city.accommodations.size) ?: matchingHotel
+                    city.accommodations.getOrNull((d - 1 + offset) % city.accommodations.size) ?: matchingHotel
                 }
             } else null
 
@@ -319,6 +330,10 @@ class GeminiPlanService {
             "旅程完美結束！推薦可直接由「${lastSpot?.name ?: city.name}」導航前往鄰近之國道交流道或高鐵/臺鐵站，順暢返程回家。"
         }
 
+        val transitWarning = if (transport != "自行開車") {
+            "旅行規劃部分路線景點距離較遠或無直達班次，無法完全使用您當前選擇的「$transport」旅遊，因此建議改用「自行開車」作為交通工具。"
+        } else null
+
         return ItineraryPlan(
             title = "${city.name} ${days}日遊・$style",
             cityName = city.name,
@@ -327,7 +342,8 @@ class GeminiPlanService {
             days = dayList,
             islandNotice = islandNotice,
             returnNavigationUrl = returnNavUrl,
-            returnTransitGuide = returnGuide
+            returnTransitGuide = returnGuide,
+            transitWarning = transitWarning
         )
     }
 

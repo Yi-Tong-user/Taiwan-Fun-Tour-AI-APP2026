@@ -120,8 +120,9 @@ fun TaiwanExploreApp() {
         }
     }
 
-    // Navigation Tab state (0: 發現, 1: 推薦, 2: AI旅程, 3: 收藏, 4: 設定)
-    var selectedNavTab by remember { mutableStateOf(0) }
+    // Navigation Tab state (0: 發現, 1: 推薦, 2: 首頁, 3: AI旅程, 4: 設定)
+    var selectedNavTab by remember { mutableStateOf(2) }
+    var showSavedDialog by remember { mutableStateOf(false) }
 
     // Shared city state
     var selectedCityForDetail by remember { mutableStateOf<CityData?>(null) }
@@ -155,6 +156,17 @@ fun TaiwanExploreApp() {
                         }
                     },
                     actions = {
+                        // 收藏按鍵 (移動到繁體中文旁邊，不更改原始功能)
+                        IconButton(
+                            onClick = { showSavedDialog = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark,
+                                contentDescription = strings.tabSaved,
+                                tint = Color.White
+                            )
+                        }
+
                         // Quick Language Indicator
                         TextButton(
                             onClick = { selectedNavTab = 4 }
@@ -205,12 +217,12 @@ fun TaiwanExploreApp() {
                         )
                     )
 
-                    // 3. AI旅程
+                    // 3. 首頁 (新增在發現、推薦後)
                     NavigationBarItem(
                         selected = selectedNavTab == 2,
                         onClick = { selectedNavTab = 2 },
-                        icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = strings.tabAITour) },
-                        label = { Text(strings.tabAITour, fontSize = 11.sp, fontWeight = if (selectedNavTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(imageVector = Icons.Default.Home, contentDescription = strings.tabHome) },
+                        label = { Text(strings.tabHome, fontSize = 11.sp, fontWeight = if (selectedNavTab == 2) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Teal800,
                             selectedTextColor = Teal800,
@@ -220,12 +232,12 @@ fun TaiwanExploreApp() {
                         )
                     )
 
-                    // 4. 收藏
+                    // 4. AI旅程
                     NavigationBarItem(
                         selected = selectedNavTab == 3,
                         onClick = { selectedNavTab = 3 },
-                        icon = { Icon(imageVector = Icons.Default.Bookmark, contentDescription = strings.tabSaved) },
-                        label = { Text(strings.tabSaved, fontSize = 11.sp, fontWeight = if (selectedNavTab == 3) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = strings.tabAITour) },
+                        label = { Text(strings.tabAITour, fontSize = 11.sp, fontWeight = if (selectedNavTab == 3) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Teal800,
                             selectedTextColor = Teal800,
@@ -270,12 +282,17 @@ fun TaiwanExploreApp() {
                         initialCityName = activeCityName,
                         language = currentLanguage
                     )
-                    2 -> AITourScreen(
-                        initialCityName = activeCityName,
+                    2 -> HomeScreen(
+                        onSelectCityForDetail = { city ->
+                            selectedCityForDetail = city
+                            activeCityName = city.name
+                        },
                         userLocationName = userLocationName,
                         language = currentLanguage
                     )
-                    3 -> SavedScreen(
+                    3 -> AITourScreen(
+                        initialCityName = activeCityName,
+                        userLocationName = userLocationName,
                         language = currentLanguage
                     )
                     4 -> SettingsScreen(
@@ -292,6 +309,20 @@ fun TaiwanExploreApp() {
                                     Manifest.permission.ACCESS_COARSE_LOCATION
                                 )
                             )
+                        },
+                        onToggleLocation = {
+                            if (isLocationEnabled) {
+                                isLocationEnabled = false
+                                userLocation = null
+                                userLocationName = null
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            }
                         }
                     )
                 }
@@ -409,5 +440,41 @@ fun TaiwanExploreApp() {
             },
             language = currentLanguage
         )
+
+        // 3. Saved Screen Full Dialog (from TopAppBar bookmark button)
+        if (showSavedDialog) {
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showSavedDialog = false },
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    strings.tabSaved,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = { showSavedDialog = false }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(containerColor = Teal700)
+                        )
+                        SavedScreen(language = currentLanguage)
+                    }
+                }
+            }
+        }
     }
 }
