@@ -493,6 +493,7 @@ object TaiwanDataProvider {
             famousFood = listOf("萬巒豬腳", "東港黑鮪魚生魚片", "潮州冷熱冰", "車城綠豆蒜")
         ),
         CityData(
+            name = "澎湖縣",
             lat = 23.5711,
             lng = 119.5793,
             agriculture = "澎湖絲瓜（稜角絲瓜）、澎湖花生、風茹草、仙人掌果",
