@@ -25,17 +25,21 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
-      - name: Prepare Environment & Fix Line Endings
+      - name: Prepare Environment & Licenses
         run: |
-          sed -i 's/\r$//' ./gradlew
-          chmod +x ./gradlew
-          if [ -f ".env.example" ] && [ ! -f ".env" ]; then
+          if [ -f ".env.example" ]; then
             cp .env.example .env
+            cp .env.example app/.env 2>/dev/null || true
           fi
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "sdk.dir=$ANDROID_HOME" > app/local.properties 2>/dev/null || true
+          yes | sdkmanager --licenses || true
 
       - name: Build APK with Gradle
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
