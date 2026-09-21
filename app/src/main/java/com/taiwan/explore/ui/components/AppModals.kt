@@ -332,33 +332,39 @@ fun HowToUseModal(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     GuideItem(
-                        icon = "🗺️",
-                        title = "1. 探索臺灣 22 縣市與農漁牧特產",
-                        desc = "在「發現」頁面中，透過臺灣地圖與上排分區選單（北部、中部、南部、東部、離島），快速查看各縣市地理位置與在地特色農特產品。"
+                        icon = "🎲",
+                        title = strings.guideItem1Title,
+                        desc = strings.guideItem1Desc
                     )
 
                     GuideItem(
-                        icon = "🎲",
-                        title = "2. 隨機出發一座城市",
-                        desc = "點擊底部的「隨機出發一座城市」按鈕，系統將以擲骰動畫隨機挑選臺灣特色縣市，並自動移至該縣市為您展示詳細遊玩建議。"
+                        icon = "🗺️",
+                        title = strings.guideItem2Title,
+                        desc = strings.guideItem2Desc
+                    )
+
+                    GuideItem(
+                        icon = "👍",
+                        title = strings.guideItem3Title,
+                        desc = strings.guideItem3Desc
                     )
 
                     GuideItem(
                         icon = "✨",
-                        title = "3. AI 智慧旅程規劃 (1~5日遊)",
-                        desc = "在「AI智慧旅程」中，自由選擇規劃天數（1~5日）、旅遊風格、交通方式與住宿偏好，由 Google Gemini AI 量身打造專屬行程。隨時可點擊「再次生成」換一套全新方案！"
+                        title = strings.guideItem4Title,
+                        desc = strings.guideItem4Desc
                     )
 
                     GuideItem(
                         icon = "🔖",
-                        title = "4. 獨立三層收藏管理",
-                        desc = "支援「收藏整套旅程」、「收藏單日行程」與「收藏單一景點」。在「收藏」頁面可隨時查閱、跳轉 Google Maps 導航或刪除整理。"
+                        title = strings.guideItem5Title,
+                        desc = strings.guideItem5Desc
                     )
 
                     GuideItem(
                         icon = "🌐",
-                        title = "5. 多國語言即時切換",
-                        desc = "在「設定」頁面中，支援繁體中文、英文、日文即時切換，所有文本與介面將立即套用您所選擇的語言。"
+                        title = strings.guideItem6Title,
+                        desc = strings.guideItem6Desc
                     )
                 }
 

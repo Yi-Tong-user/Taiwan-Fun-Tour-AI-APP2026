@@ -181,6 +181,47 @@ fun AITourScreen(
                 }
             }
 
+            // Island Transit Features Card (Auto-detect boat/flight)
+            val islandCap = remember(selectedCity) {
+                GeminiPlanService.getIslandCapability(selectedCity)
+            }
+            if (isIslandCity && islandCap != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Blue50,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Blue100),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.DirectionsBoat, contentDescription = null, tint = Blue800, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "【${getLocalizedCityName(selectedCity, language)}】${strings.islandFeatureNotice}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Blue900
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "🚢 船班：${islandCap.boatDescription}",
+                            fontSize = 11.sp,
+                            color = Slate700,
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "✈️ 航班：${islandCap.flightDescription}",
+                            fontSize = 11.sp,
+                            color = Slate700,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // 2. Duration (1 to 5 days)
@@ -209,7 +250,7 @@ fun AITourScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Travel Style (4 options without brackets)
+            // 3. Travel Style (Explicit Definitions)
             Text(text = strings.travelStyle, fontWeight = FontWeight.Bold, color = Slate800)
             Row(
                 modifier = Modifier
@@ -219,6 +260,13 @@ fun AITourScreen(
             ) {
                 styles.forEach { s ->
                     val isSelected = selectedStyle == s
+                    val styleLabel = when (s) {
+                        "休閒遊憩" -> strings.styleLeisure
+                        "文化生活" -> strings.styleCulture
+                        "戶外漫遊" -> strings.styleOutdoor
+                        "美食尋味" -> strings.styleFood
+                        else -> s
+                    }
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = if (isSelected) Teal700 else Slate100,
@@ -228,7 +276,7 @@ fun AITourScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
                             Text(
-                                text = s,
+                                text = styleLabel,
                                 color = if (isSelected) Color.White else Slate700,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -238,9 +286,51 @@ fun AITourScreen(
                 }
             }
 
+            // Style Definition Explanation Card
+            val styleDescription = when (selectedStyle) {
+                "休閒遊憩" -> strings.styleLeisureDesc
+                "文化生活" -> strings.styleCultureDesc
+                "戶外漫遊" -> strings.styleOutdoorDesc
+                "美食尋味" -> strings.styleFoodDesc
+                else -> ""
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Teal50,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Teal200),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = when (selectedStyle) {
+                            "休閒遊憩" -> Icons.Default.Spa
+                            "文化生活" -> Icons.Default.AccountBalance
+                            "戶外漫遊" -> Icons.Default.Terrain
+                            else -> Icons.Default.Restaurant
+                        },
+                        contentDescription = null,
+                        tint = Teal800,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = styleDescription,
+                        fontSize = 12.sp,
+                        color = Teal900,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. Transport Method (Mainland vs Island)
+            // 4. Transport Method (Independent Icons & Subtitles)
             Text(text = strings.transportMethod, fontWeight = FontWeight.Bold, color = Slate800)
             Column(modifier = Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 availableTransports.chunked(2).forEach { rowTransports ->
@@ -250,27 +340,83 @@ fun AITourScreen(
                     ) {
                         rowTransports.forEach { t ->
                             val isSelected = selectedTransport == t
+                            val transportInfo = when (t) {
+                                "自行開車" -> Triple(strings.transportCar, strings.transportCarSub, Icons.Default.DirectionsCar)
+                                "大眾運輸" -> Triple(strings.transportTransit, strings.transportTransitSub, Icons.Default.Train)
+                                "騎乘機車" -> Triple(strings.transportScooter, strings.transportScooterSub, Icons.Default.TwoWheeler)
+                                "自行車漫遊" -> Triple(strings.transportBike, strings.transportBikeSub, Icons.Default.DirectionsBike)
+                                "輪船接駁" -> Triple(strings.transportBoat, strings.transportBoatSub, Icons.Default.DirectionsBoat)
+                                "飛機往返" -> Triple(strings.transportFlight, strings.transportFlightSub, Icons.Default.Flight)
+                                else -> Triple(t, "", Icons.Default.DirectionsCar)
+                            }
+
                             Surface(
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = if (isSelected) Teal50 else Color.White,
                                 border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
+                                    1.5.dp,
                                     if (isSelected) Teal700 else Slate200
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
                                     .clickable { selectedTransport = t }
                             ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(10.dp)) {
-                                    Text(
-                                        text = t,
-                                        fontSize = 13.sp,
-                                        color = if (isSelected) Teal800 else Slate700,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                Row(
+                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = transportInfo.third,
+                                        contentDescription = null,
+                                        tint = if (isSelected) Teal700 else Slate500,
+                                        modifier = Modifier.size(20.dp)
                                     )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = transportInfo.first,
+                                            fontSize = 12.sp,
+                                            color = if (isSelected) Teal900 else Slate800,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = transportInfo.second,
+                                            fontSize = 10.sp,
+                                            color = if (isSelected) Teal700 else Slate500
+                                        )
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            // Transit Suggestion Banner if choice requires caution
+            val instantWarning = remember(selectedCity, selectedTransport) {
+                GeminiPlanService.getTransitWarning(selectedCity, selectedTransport)
+            }
+            if (instantWarning != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Amber50,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Amber200),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = Amber800, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = instantWarning,
+                            fontSize = 11.sp,
+                            color = Amber900,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

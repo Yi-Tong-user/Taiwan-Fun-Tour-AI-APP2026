@@ -12,8 +12,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -47,7 +49,8 @@ import java.util.Calendar
 fun HomeScreen(
     onSelectCityForDetail: (CityData) -> Unit,
     userLocationName: String? = null,
-    language: AppLanguage = AppLanguage.ZH_TW
+    language: AppLanguage = AppLanguage.ZH_TW,
+    resetTrigger: Int = 0
 ) {
     val context = LocalContext.current
     val strings = getStrings(language)
@@ -55,30 +58,46 @@ fun HomeScreen(
     val allCities = remember { TaiwanDataProvider.cities }
 
     var isRolling by remember { mutableStateOf(false) }
+    var isShowingPickedCityText by remember { mutableStateOf(false) }
     var rollingCityName by remember { mutableStateOf("臺灣") }
     var selectedCity by remember { mutableStateOf<CityData?>(null) }
     var showActiveLaunchView by remember { mutableStateOf(false) }
 
-    // Start 3-second rolling city animation
+    // When bottom nav "首頁" is clicked, reset to default map & roll view
+    LaunchedEffect(resetTrigger) {
+        if (resetTrigger > 0) {
+            isRolling = false
+            isShowingPickedCityText = false
+            selectedCity = null
+            showActiveLaunchView = false
+        }
+    }
+
+    // Start 3-second rolling city animation + 3-second prominent city name display
     fun startRandomRoll() {
-        if (isRolling) return
+        if (isRolling || isShowingPickedCityText) return
         isRolling = true
+        isShowingPickedCityText = false
         selectedCity = null
         showActiveLaunchView = false
 
         coroutineScope.launch {
             val startTime = System.currentTimeMillis()
             var index = 0
-            while (System.currentTimeMillis() - startTime < 3000) {
+            while (System.currentTimeMillis() - startTime < 2800) {
                 index = (index + 1) % allCities.size
                 rollingCityName = allCities[index].name
-                delay(90)
+                delay(80)
             }
-            // Final stop on a randomized city
             val finalCity = allCities.random()
             rollingCityName = finalCity.name
-            selectedCity = finalCity
             isRolling = false
+            isShowingPickedCityText = true
+
+            // Display picked city text for 3 seconds prominently
+            delay(3000)
+            isShowingPickedCityText = false
+            selectedCity = finalCity
         }
     }
 
@@ -96,56 +115,14 @@ fun HomeScreen(
             .background(Slate50)
     ) {
         if (!showActiveLaunchView) {
-            // Main Map & Rolling View
+            // Main Map & Rolling View (No top Taiwan Fun Tour icon or text banner)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Banner
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Teal50,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Teal200),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isRolling) Amber500 else Teal700,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = if (isRolling) "🎲" else "🗺️",
-                                    fontSize = 18.sp
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (isRolling) strings.randomSelecting else if (selectedCity != null) "已選中：${getLocalizedCityName(selectedCity!!.name, language)}" else strings.appName,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = if (isRolling) Amber700 else Teal900
-                            )
-                            Text(
-                                text = if (isRolling) "即將停留在任一特色縣市..." else strings.appSubtitle,
-                                fontSize = 11.sp,
-                                color = Slate600
-                            )
-                        }
-                    }
-                }
-
-                // Taiwan Map in Center with Green/Teal Aesthetic Border
+                // Taiwan Map in Center maintaining strict aspect ratio
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -159,7 +136,7 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(12.dp),
+                            .padding(10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -171,29 +148,64 @@ fun HomeScreen(
                                 .clip(RoundedCornerShape(16.dp))
                         )
 
-                        // If rolling, show prominent animated badge in center
+                        // 1. When rolling: show animated indicator
                         if (isRolling) {
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = Slate900.copy(alpha = 0.85f),
-                                shadowElevation = 8.dp,
+                                color = Slate900.copy(alpha = 0.88f),
+                                shadowElevation = 10.dp,
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
+                                        modifier = Modifier.size(22.dp),
                                         color = Amber400,
                                         strokeWidth = 2.5.dp
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         text = rollingCityName,
-                                        fontSize = 20.sp,
+                                        fontSize = 22.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        // 2. When roll stops: display chosen city text prominently for 3 seconds
+                        if (isShowingPickedCityText) {
+                            Surface(
+                                shape = RoundedCornerShape(22.dp),
+                                color = Slate900.copy(alpha = 0.92f),
+                                shadowElevation = 12.dp,
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 18.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "🎯 隨機精選城市",
+                                        fontSize = 13.sp,
+                                        color = Amber400,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = rollingCityName,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "即將載入城市介紹與即刻啟動...",
+                                        fontSize = 11.sp,
+                                        color = Slate300
                                     )
                                 }
                             }
@@ -201,9 +213,9 @@ fun HomeScreen(
                     }
                 }
 
-                // Selected City Info Card (shown when roll completes)
+                // Selected City Info Card (shown after 3 seconds text display)
                 AnimatedVisibility(
-                    visible = selectedCity != null && !isRolling,
+                    visible = selectedCity != null && !isRolling && !isShowingPickedCityText,
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
                     exit = fadeOut()
                 ) {
@@ -307,7 +319,7 @@ fun HomeScreen(
                 }
 
                 // Random City Action Button
-                if (selectedCity == null) {
+                if (selectedCity == null && !isShowingPickedCityText) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = { startRandomRoll() },
@@ -332,11 +344,10 @@ fun HomeScreen(
                 }
             }
         } else {
-            // 即刻啟動 View: 5+ currently operating spots & food places based on device local time
+            // 即刻啟動 View: 15 operating spots/shops according to current time (AI operation, NO "15" displayed on UI)
             val city = selectedCity ?: allCities.first()
             val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
 
-            // Filter open spots; ensure at least 5
             val openSpots = remember(city, currentHour) {
                 val matching = city.highlights.filter { spot ->
                     if (spot.isNightOnly) {
@@ -344,36 +355,49 @@ fun HomeScreen(
                     } else {
                         currentHour in spot.startHour..spot.endHour
                     }
+                }.toMutableList()
+
+                // Append remaining spots to reach 15 for AI operation
+                for (spot in city.highlights) {
+                    if (matching.size >= 15) break
+                    if (!matching.any { it.name == spot.name }) matching.add(spot)
                 }
-                if (matching.size >= 5) {
-                    matching
-                } else {
-                    // Include food recommendations or additional city highlights
-                    val combined = matching.toMutableList()
-                    for (spot in city.highlights) {
-                        if (combined.size >= 6) break
-                        if (!combined.contains(spot)) combined.add(spot)
+
+                if (matching.size < 15) {
+                    for (f in city.tourismFactories) {
+                        if (matching.size >= 15) break
+                        matching.add(
+                            Spot(
+                                name = f.name,
+                                intro = f.intro,
+                                googleMapsQuery = f.googleMapsQuery,
+                                district = f.district,
+                                openingHours = f.openingHours,
+                                startHour = f.startHour,
+                                endHour = f.endHour
+                            )
+                        )
                     }
-                    // If still under 5, add famous foods as spots
-                    if (combined.size < 5) {
-                        city.famousFood.forEachIndexed { idx, foodName ->
-                            if (combined.size < 5) {
-                                combined.add(
-                                    Spot(
-                                        name = foodName,
-                                        intro = "${city.name}在地必嚐代表美食，營業中店家推薦。",
-                                        googleMapsQuery = "${city.name} $foodName",
-                                        district = city.districts.firstOrNull() ?: city.name,
-                                        openingHours = "10:00 - 21:00",
-                                        startHour = 10,
-                                        endHour = 21
-                                    )
+                }
+
+                if (matching.size < 15) {
+                    city.famousFood.forEach { foodName ->
+                        if (matching.size < 15) {
+                            matching.add(
+                                Spot(
+                                    name = foodName,
+                                    intro = "${city.name}在地必嚐代表美食，營業中店家推薦，美味可口令人回味。",
+                                    googleMapsQuery = "${city.name} $foodName",
+                                    district = city.districts.firstOrNull() ?: city.name,
+                                    openingHours = "10:00 - 21:00",
+                                    startHour = 10,
+                                    endHour = 21
                                 )
-                            }
+                            )
                         }
                     }
-                    combined
                 }
+                matching.take(15)
             }
 
             Column(
@@ -381,48 +405,27 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                // Top Header Row with "返回首頁" button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "⚡ 即刻啟動・營業中推薦 (${openSpots.size})",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Teal900
-                        )
-                        Text(
-                            text = "${getLocalizedCityName(city.name, language)} · 依目前時間 (${currentHour}:00) 即時精選",
-                            fontSize = 11.sp,
-                            color = Slate500
-                        )
-                    }
-
-                    // 返回首頁 Button
-                    OutlinedButton(
-                        onClick = {
-                            showActiveLaunchView = false
-                            selectedCity = null
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Teal800),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Teal600)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = strings.returnToHome, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
+                // Header (NO number 15 or count displayed on UI, and NO inline return button)
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    Text(
+                        text = "⚡ 即刻啟動・營業中推薦",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Teal900
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${getLocalizedCityName(city.name, language)} · 依目前時間即時精選",
+                        fontSize = 12.sp,
+                        color = Slate500
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // List of 5+ open spots with direct Google Maps navigation from location
+                // List of operating spots
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(openSpots) { spot ->
                         Card(
@@ -434,45 +437,54 @@ fun HomeScreen(
                         ) {
                             Row(
                                 modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // 營業中的色塊出現在地標名稱的文字左上方
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Emerald100,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    ) {
                                         Text(
-                                            text = spot.name,
+                                            text = strings.currentlyOperating,
+                                            fontSize = 10.sp,
+                                            color = Emerald700,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            color = Slate900
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Emerald100
-                                        ) {
-                                            Text(
-                                                text = strings.currentlyOperating,
-                                                fontSize = 10.sp,
-                                                color = Emerald700,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
-                                            )
-                                        }
                                     }
-                                    Spacer(modifier = Modifier.height(3.dp))
+
+                                    Text(
+                                        text = spot.name,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = Slate900
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = "${spot.openingHours} · ${spot.districts.firstOrNull() ?: city.name}",
                                         fontSize = 11.sp,
                                         color = Slate500
                                     )
+
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = spot.intro,
-                                        fontSize = 12.sp,
-                                        color = Slate600,
-                                        lineHeight = 17.sp,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+
+                                    // 內文的描述需要有滑動功能能看完全文
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(max = 72.dp)
+                                            .verticalScroll(rememberScrollState())
+                                    ) {
+                                        Text(
+                                            text = spot.intro,
+                                            fontSize = 12.sp,
+                                            color = Slate600,
+                                            lineHeight = 17.sp
+                                        )
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.width(10.dp))
@@ -482,7 +494,8 @@ fun HomeScreen(
                                     onClick = { openGoogleMaps(spot) },
                                     colors = ButtonDefaults.buttonColors(containerColor = Teal700),
                                     shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                    modifier = Modifier.align(Alignment.CenterVertically)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Navigation,

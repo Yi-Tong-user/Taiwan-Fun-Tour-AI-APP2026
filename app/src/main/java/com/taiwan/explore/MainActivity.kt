@@ -123,6 +123,7 @@ fun TaiwanExploreApp() {
     // Navigation Tab state (0: 發現, 1: 推薦, 2: 首頁, 3: AI旅程, 4: 設定)
     var selectedNavTab by remember { mutableStateOf(2) }
     var showSavedDialog by remember { mutableStateOf(false) }
+    var homeResetTrigger by remember { mutableStateOf(0) }
 
     // Shared city state
     var selectedCityForDetail by remember { mutableStateOf<CityData?>(null) }
@@ -220,7 +221,10 @@ fun TaiwanExploreApp() {
                     // 3. 首頁 (新增在發現、推薦後)
                     NavigationBarItem(
                         selected = selectedNavTab == 2,
-                        onClick = { selectedNavTab = 2 },
+                        onClick = {
+                            selectedNavTab = 2
+                            homeResetTrigger++
+                        },
                         icon = { Icon(imageVector = Icons.Default.Home, contentDescription = strings.tabHome) },
                         label = { Text(strings.tabHome, fontSize = 11.sp, fontWeight = if (selectedNavTab == 2) FontWeight.Bold else FontWeight.Normal) },
                         colors = NavigationBarItemDefaults.colors(
@@ -280,7 +284,8 @@ fun TaiwanExploreApp() {
                     )
                     1 -> RecommendScreen(
                         initialCityName = activeCityName,
-                        language = currentLanguage
+                        language = currentLanguage,
+                        onOpenSaved = { showSavedDialog = true }
                     )
                     2 -> HomeScreen(
                         onSelectCityForDetail = { city ->
@@ -288,7 +293,8 @@ fun TaiwanExploreApp() {
                             activeCityName = city.name
                         },
                         userLocationName = userLocationName,
-                        language = currentLanguage
+                        language = currentLanguage,
+                        resetTrigger = homeResetTrigger
                     )
                     3 -> AITourScreen(
                         initialCityName = activeCityName,
@@ -379,7 +385,8 @@ fun TaiwanExploreApp() {
                         }
                     }
                 },
-                language = currentLanguage
+                language = currentLanguage,
+                onOpenSaved = { showSavedDialog = true }
             )
         }
 
@@ -407,7 +414,8 @@ fun TaiwanExploreApp() {
                         }
                     }
                 },
-                language = currentLanguage
+                language = currentLanguage,
+                onOpenSaved = { showSavedDialog = true }
             )
         }
 

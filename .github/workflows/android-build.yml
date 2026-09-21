@@ -50,20 +50,27 @@ jobs:
           name: gradle-failure-reports
           path: app/build/reports/
 
+      - name: Prepare Named APK
+        run: |
+          mkdir -p release_apk
+          for apk in app/build/outputs/apk/debug/*.apk; do
+            cp "$apk" "release_apk/Taiwan Fun Tour APP v1.0.${{ github.run_number }}.apk"
+          done
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TaiwanExplore-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: Taiwan Fun Tour APP (APK)
+          path: release_apk/*.apk
 
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: "v1.0.${{ github.run_number }}"
-          name: "Taiwan Explore App v1.0.${{ github.run_number }} (APK)"
-          body: "🇹🇼 最新版 Android APK 安裝檔！點擊下方 Assets 中的 APK 檔案即可直接下載安裝到 Android 手機。"
-          files: app/build/outputs/apk/debug/*.apk
+          name: "Release Taiwan Fun Tour APP v1.0.${{ github.run_number }}"
+          body: "🇹🇼 最新版 Android APK 安裝檔！點擊下方 Assets 中的 Taiwan Fun Tour APP (APK) 檔案即可直接下載安裝到 Android 手機，安裝後手機上應用程式名稱顯示為「臺灣好好玩」。"
+          files: release_apk/*.apk
           draft: false
           prerelease: false
           make_latest: true

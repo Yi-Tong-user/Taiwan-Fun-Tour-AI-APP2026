@@ -60,7 +60,8 @@ data class PlannedSpot(
     val duration: String,
     val transportToNext: String,
     val googleMapsKeyword: String,
-    val district: String = ""
+    val district: String = "",
+    val transportMode: String = "car"
 )
 
 data class DayItinerary(
@@ -74,6 +75,7 @@ data class DayItinerary(
 )
 
 data class ItineraryPlan(
+    val id: String = java.util.UUID.randomUUID().toString(),
     val title: String,
     val cityName: String,
     val daysCount: Int,
@@ -82,5 +84,7 @@ data class ItineraryPlan(
     val islandNotice: String? = null,
     val returnNavigationUrl: String? = null,
     val returnTransitGuide: String? = null,
-    val transitWarning: String? = null
+    val transitWarning: String? = null,
+    val selectedTransport: String = "自行開車",
+    val isIsland: Boolean = false
 )

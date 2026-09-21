@@ -42,18 +42,28 @@ fun DiscoverScreen(
     val strings = getStrings(language)
 
     var searchQuery by remember { mutableStateOf("") }
-    val allCities = remember { TaiwanDataProvider.cities }
+    val regionOrder = listOf("北部", "中部", "南部", "東部", "離島")
+    val allCities = remember {
+        TaiwanDataProvider.cities.sortedWith(
+            compareBy<CityData> { regionOrder.indexOf(it.region).let { idx -> if (idx == -1) 99 else idx } }
+        )
+    }
 
     val filteredCities = remember(searchQuery) {
         if (searchQuery.isBlank()) {
             allCities
         } else {
             allCities.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.agriculture.contains(searchQuery, ignoreCase = true) ||
-                        it.fishery.contains(searchQuery, ignoreCase = true) ||
-                        it.livestock.contains(searchQuery, ignoreCase = true) ||
-                        it.region.contains(searchQuery, ignoreCase = true)
+                val q = searchQuery.trim()
+                it.name.contains(q, ignoreCase = true) ||
+                        it.agriculture.contains(q, ignoreCase = true) ||
+                        it.fishery.contains(q, ignoreCase = true) ||
+                        it.livestock.contains(q, ignoreCase = true) ||
+                        it.region.contains(q, ignoreCase = true) ||
+                        it.description.contains(q, ignoreCase = true) ||
+                        it.famousFood.any { f -> f.contains(q, ignoreCase = true) } ||
+                        it.highlights.any { h -> h.name.contains(q, ignoreCase = true) || h.intro.contains(q, ignoreCase = true) } ||
+                        it.tourismFactories.any { f -> f.name.contains(q, ignoreCase = true) || f.intro.contains(q, ignoreCase = true) }
             }
         }
     }
@@ -169,7 +179,8 @@ fun DiscoverScreen(
                             Text(
                                 text = "🌾 ${strings.agriculturalProduce}：${city.agriculture}",
                                 fontSize = 12.sp,
-                                color = Slate700,
+                                color = if (searchQuery.isNotBlank() && city.agriculture.contains(searchQuery.trim(), ignoreCase = true)) Amber800 else Slate700,
+                                fontWeight = if (searchQuery.isNotBlank() && city.agriculture.contains(searchQuery.trim(), ignoreCase = true)) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -177,7 +188,8 @@ fun DiscoverScreen(
                             Text(
                                 text = "🐟 ${strings.fisheryProduce}：${city.fishery}",
                                 fontSize = 12.sp,
-                                color = Slate600,
+                                color = if (searchQuery.isNotBlank() && city.fishery.contains(searchQuery.trim(), ignoreCase = true)) Amber800 else Slate600,
+                                fontWeight = if (searchQuery.isNotBlank() && city.fishery.contains(searchQuery.trim(), ignoreCase = true)) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -185,7 +197,8 @@ fun DiscoverScreen(
                             Text(
                                 text = "🥩 ${strings.livestockProduce}：${city.livestock}",
                                 fontSize = 12.sp,
-                                color = Slate600,
+                                color = if (searchQuery.isNotBlank() && city.livestock.contains(searchQuery.trim(), ignoreCase = true)) Amber800 else Slate600,
+                                fontWeight = if (searchQuery.isNotBlank() && city.livestock.contains(searchQuery.trim(), ignoreCase = true)) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

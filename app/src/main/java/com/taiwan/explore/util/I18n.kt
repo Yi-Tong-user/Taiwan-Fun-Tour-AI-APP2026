@@ -140,11 +140,58 @@ data class Strings(
     val locating: String,
     val locationDisabled: String,
     val specialRequests: String,
-    val specialRequestsHint: String
+    val specialRequestsHint: String,
+
+    // Styles & Definitions
+    val styleLeisure: String,
+    val styleLeisureDesc: String,
+    val styleCulture: String,
+    val styleCultureDesc: String,
+    val styleOutdoor: String,
+    val styleOutdoorDesc: String,
+    val styleFood: String,
+    val styleFoodDesc: String,
+
+    // Transport Labels & Subtitles
+    val transportCar: String,
+    val transportCarSub: String,
+    val transportTransit: String,
+    val transportTransitSub: String,
+    val transportScooter: String,
+    val transportScooterSub: String,
+    val transportBike: String,
+    val transportBikeSub: String,
+    val transportBoat: String,
+    val transportBoatSub: String,
+    val transportFlight: String,
+    val transportFlightSub: String,
+
+    // Island & Routing
+    val islandFeatureNotice: String,
+    val islandInternalTitle: String,
+    val islandInternalScooter: String,
+    val islandInternalCar: String,
+    val islandInternalBus: String,
+    val islandSwitchNotice: String,
+    val multiStopRouteWithHotel: String,
+
+    // Guide Items (1 to 6)
+    val guideItem1Title: String,
+    val guideItem1Desc: String,
+    val guideItem2Title: String,
+    val guideItem2Desc: String,
+    val guideItem3Title: String,
+    val guideItem3Desc: String,
+    val guideItem4Title: String,
+    val guideItem4Desc: String,
+    val guideItem5Title: String,
+    val guideItem5Desc: String,
+    val guideItem6Title: String,
+    val guideItem6Desc: String
 )
 
 val zhTwStrings = Strings(
-    appName = "Taiwan Fun Tour",
+    appName = "臺灣好好玩",
     appSubtitle = "探索臺灣22縣市和智慧AI旅程",
     tabHome = "首頁",
     tabDiscover = "發現",
@@ -218,13 +265,13 @@ val zhTwStrings = Strings(
     clearAllSpots = "清空所有景點",
     clearAllConfirm = "確定清空所有收藏的景點嗎？",
     swipeToDeleteHint = "向左滑動即可刪除",
-    savedLimitReached = "收藏夾已額滿（上限20筆）",
-    organizeSaved = "整理收藏",
+    savedLimitReached = "收藏夾已額滿請先整理收藏",
+    organizeSaved = "整理收藏夾",
 
     settingsTitle = "應用程式設定",
     languageSection = "介面語言切換",
     disclaimerSection = "AI 智慧生成免責聲明",
-    guideSection = "Taiwan Fun Tour・使用說明指南",
+    guideSection = "臺灣好好玩・使用說明指南",
     openFullDisclaimer = "查看完整免責聲明",
     openFullGuide = "查看完整使用指南",
     locationRequestTitle = "定位服務說明與請求",
@@ -246,7 +293,54 @@ val zhTwStrings = Strings(
     locating = "定位中...",
     locationDisabled = "未開啟定位",
     specialRequests = "特殊需求或偏好 (選填)",
-    specialRequestsHint = "例如：帶長輩同行、喜歡無障礙設施、想吃在地素食..."
+    specialRequestsHint = "例如：帶長輩同行、喜歡無障礙設施、想吃在地素食...",
+
+    // Styles & Definitions
+    styleLeisure = "休閒遊憩",
+    styleLeisureDesc = "以放鬆身心、渡假勝地、景觀莊園與慢活步調為主，適合家庭、長輩與情侶，輕鬆舒適無負擔。",
+    styleCulture = "文化生活",
+    styleCultureDesc = "走訪歷史古蹟、文創聚落、在地博物館與傳統聚落，深入體驗城鄉人文故事與生活底蘊。",
+    styleOutdoor = "戶外漫遊",
+    styleOutdoorDesc = "親近自然山林、海岸步道、國家風景區與生態秘境，享受踏青健走與壯麗山海洗禮。",
+    styleFood = "美食尋味",
+    styleFoodDesc = "深入在地必吃老店、米其林小吃、傳統菜市場與觀光夜市，每趟行程至少安排兩間以上代表性美食或夜市市場巡禮。",
+
+    // Transport Labels & Subtitles
+    transportCar = "自行開車",
+    transportCarSub = "汽車自駕",
+    transportTransit = "大眾運輸",
+    transportTransitSub = "台鐵 / 高鐵 / 公車",
+    transportScooter = "騎乘機車",
+    transportScooterSub = "機車穿梭",
+    transportBike = "自行車漫遊",
+    transportBikeSub = "腳踏車慢行",
+    transportBoat = "輪船接駁",
+    transportBoatSub = "高速客輪",
+    transportFlight = "飛機往返",
+    transportFlightSub = "國內航班",
+
+    // Island & Routing
+    islandFeatureNotice = "離島交通特色",
+    islandInternalTitle = "離島島內交通方式二次切換",
+    islandInternalScooter = "🛵 機車漫遊 (最推薦環島)",
+    islandInternalCar = "🚗 汽車自駕 (家庭舒適)",
+    islandInternalBus = "🚌 環島公車 (台灣好行)",
+    islandSwitchNotice = "已重新安排島內交通為",
+    multiStopRouteWithHotel = "開啟多點行程導航 (含住宿下榻處) 🗺️",
+
+    // Guide Items (1 to 6)
+    guideItem1Title = "1. 隨機出發一座城市",
+    guideItem1Desc = "點擊底部的「隨機出發一座城市」按鈕，系統將以動畫隨機挑選臺灣特色縣市，並展示即時營業中的熱門景點與專屬導覽介紹。",
+    guideItem2Title = "2. 發現臺灣分區農漁特產",
+    guideItem2Desc = "在「發現」頁面中，依北部、中部、南部、東部、離島嚴格排序瀏覽 25 處縣市與島嶼，支援在地農漁牧特產搜尋（如搜尋蓮子即顯示臺南白河特產）。",
+    guideItem3Title = "3. 精選推薦熱門好去處",
+    guideItem3Desc = "在「推薦」頁面中，依各縣市即時瀏覽在地必訪景點、觀光工廠與特色優質住宿，支援直接開啟 Google Maps 導航與快速收藏。",
+    guideItem4Title = "4. AI 智慧旅程規劃 (1~5日)",
+    guideItem4Desc = "在「AI旅程」中自由選擇天數、旅遊風格、交通方式與住宿偏好。美食尋味每日必定安排 2 間以上美食推薦或菜市場夜市；離島區域自動判斷船機，提供返程末班交通指引與島內交通二次切換。",
+    guideItem5Title = "5. 收藏管理與額滿清理",
+    guideItem5Desc = "支援全旅程、單日旅程與單一景點（單筆上限20筆）獨立收藏管理。額滿時跳出整理提醒並可一鍵跳轉，景點收藏更提供一鍵全部刪除功能。",
+    guideItem6Title = "6. 多語言即時切換",
+    guideItem6Desc = "在「設定」頁面中，支援繁體中文、English、日本語即時切換，所有頁面說明、使用指南與臺灣 25 縣市島嶼地名全面同步在地化切換。"
 )
 
 val enStrings = Strings(
@@ -352,7 +446,54 @@ val enStrings = Strings(
     locating = "Locating...",
     locationDisabled = "Location Disabled",
     specialRequests = "Special Requests (Optional)",
-    specialRequestsHint = "e.g., traveling with elders, wheelchair accessible, local vegetarian..."
+    specialRequestsHint = "e.g., traveling with elders, wheelchair accessible, local vegetarian...",
+
+    // Styles & Definitions
+    styleLeisure = "Leisure & Relax",
+    styleLeisureDesc = "Focuses on soothing retreats, scenic estates, and slow-paced living, relaxing and comfortable for all travelers.",
+    styleCulture = "Culture & Heritage",
+    styleCultureDesc = "Visits historic monuments, creative arts parks, local museums, and folklore settlements to immerse in rich Taiwanese heritage.",
+    styleOutdoor = "Outdoor & Nature",
+    styleOutdoorDesc = "Embraces natural mountains, coastal trails, national scenic areas, and ecological wonders with scenic hikes.",
+    styleFood = "Gourmet Tasting",
+    styleFoodDesc = "Explores classic local eateries, traditional markets, and vibrant night markets, with at least 2 gourmet food spots or markets planned every day.",
+
+    // Transport Labels & Subtitles
+    transportCar = "Driving",
+    transportCarSub = "Car & Highway",
+    transportTransit = "Public Transit",
+    transportTransitSub = "TRA / HSR / Bus",
+    transportScooter = "Scooter Riding",
+    transportScooterSub = "Motorcycle",
+    transportBike = "Cycling Tour",
+    transportBikeSub = "Bicycle Trails",
+    transportBoat = "Ferry Transit",
+    transportBoatSub = "High-speed Ferry",
+    transportFlight = "Flight Transit",
+    transportFlightSub = "Domestic Flights",
+
+    // Island & Routing
+    islandFeatureNotice = "Island Transit Features",
+    islandInternalTitle = "Switch Island Internal Transportation",
+    islandInternalScooter = "🛵 Island Scooter (Recommended)",
+    islandInternalCar = "🚗 Car Rental (Comfort)",
+    islandInternalBus = "🚌 Island Bus (Taiwan Tourist Shuttle)",
+    islandSwitchNotice = "Island transit mode switched to",
+    multiStopRouteWithHotel = "Open Multi-Stop Route (With Hotel) 🗺️",
+
+    // Guide Items (1 to 6)
+    guideItem1Title = "1. Random City Adventure",
+    guideItem1Desc = "Tap 'Random City Adventure' at the bottom to randomly pick a Taiwan city with animations, showcasing operating attractions and city highlights.",
+    guideItem2Title = "2. Discover Cities & Local Specialties",
+    guideItem2Desc = "Explore 25 destinations ordered by North, Central, South, East, and Offshore Islands, with search support for agriculture, fishery, and livestock specialties.",
+    guideItem3Title = "3. Recommended Highlights & Stays",
+    guideItem3Desc = "Browse curated highlights, tourism factories, and accommodations per city, with direct Google Maps navigation and bookmarking.",
+    guideItem4Title = "4. AI Smart Tour Planning (1-5 Days)",
+    guideItem4Desc = "Tailor your itinerary by travel style, transport mode, and stays. Gourmet tours ensure 2+ food stops or night markets daily; island trips auto-detect ferries/flights with return guidance.",
+    guideItem5Title = "5. Favorites & Storage Management",
+    guideItem5Desc = "Manage full tours, single-day trips, and spots (max 20 spots). Get alerts when full and clear spots with one tap.",
+    guideItem6Title = "6. Multilingual Switching",
+    guideItem6Desc = "Switch instantly between Traditional Chinese, English, and Japanese. All UI guides, details, and city names adapt immediately."
 )
 
 val jaStrings = Strings(
@@ -458,7 +599,54 @@ val jaStrings = Strings(
     locating = "現在地を取得中...",
     locationDisabled = "位置情報未取得",
     specialRequests = "特別な要望（任意）",
-    specialRequestsHint = "例：高齢者同行、バリアフリー希望、ベジタリアン料理..."
+    specialRequestsHint = "例：高齢者同行、バリアフリー希望、ベジタリアン料理...",
+
+    // Styles & Definitions
+    styleLeisure = "レジャー＆癒し",
+    styleLeisureDesc = "心身のリフレッシュ、リゾート地、景勝地をのんびり楽しむ、ゆったり快適な旅程です。",
+    styleCulture = "文化＆暮らし",
+    styleCultureDesc = "歴史的史跡、文化クリエイティブパーク、博物館や伝統集落を巡り、台湾の深みある人文文化を体験します。",
+    styleOutdoor = "アウトドア＆自然",
+    styleOutdoorDesc = "山林や海岸遊歩道、国家風景区、生態系スポットを歩き、大自然の素晴らしい景色を満喫します。",
+    styleFood = "美食めぐり",
+    styleFoodDesc = "地元で愛される名店、伝統的な朝市、夜市を深く探索し、毎日2軒以上の名物グルメまたは市場・夜市を巡ります。",
+
+    // Transport Labels & Subtitles
+    transportCar = "マイカー・レンタカー",
+    transportCarSub = "自動車",
+    transportTransit = "公共交通機関",
+    transportTransitSub = "台湾鉄道 / 新幹線 / バス",
+    transportScooter = "スクーター・バイク",
+    transportScooterSub = "バイク移動",
+    transportBike = "サイクリング",
+    transportBikeSub = "自転車の旅",
+    transportBoat = "定期船・フェリー",
+    transportBoatSub = "高速船",
+    transportFlight = "国内線航空便",
+    transportFlightSub = "飛行機",
+
+    // Island & Routing
+    islandFeatureNotice = "離島の交通事情",
+    islandInternalTitle = "島内移動手段の切り替え",
+    islandInternalScooter = "🛵 レンタルバイク (周遊おすすめ)",
+    islandInternalCar = "🚗 レンタカー (ファミリー快適)",
+    islandInternalBus = "🚌 周遊バス (台湾好行)",
+    islandSwitchNotice = "島内交通を切り替えました：",
+    multiStopRouteWithHotel = "複数スポットのルートを開く (ホテル含む) 🗺️",
+
+    // Guide Items (1 to 6)
+    guideItem1Title = "1. ランダムで街へ出発",
+    guideItem1Desc = "「ランダムで街へ出発」ボタンをタップすると、アニメーションで台湾の特色ある都市が選ばれ、営業中のスポットや見どころが表示されます。",
+    guideItem2Title = "2. 台湾各地域の特産品を発見",
+    guideItem2Desc = "北部、中部、南部、東部、離島の順で台湾25の県市・離島を探索。農水畜産の特産品検索も可能です。",
+    guideItem3Title = "3. おすすめスポット＆宿泊",
+    guideItem3Desc = "各県市の人気観光地、観光工場、おすすめ宿泊施設をチェックし、Google マップへのナビ連携やお気に入りに保存できます。",
+    guideItem4Title = "4. AI 旅程プランナー (1〜5日)",
+    guideItem4Desc = "旅行スタイルや移動手段、宿泊の好みに応じてAIが最適なルートを提案。美食めぐりでは毎日2軒以上のグルメ・市場・夜市を含み、離島では船・飛行機の終電終便案内も対応。",
+    guideItem5Title = "5. お気に入り管理＆整理",
+    guideItem5Desc = "全旅程・日別旅程・スポット（最大20件）の3層保存に対応。上限時の整理案内やスポット一括削除も可能です。",
+    guideItem6Title = "6. 多言語切り替え",
+    guideItem6Desc = "繁体字中国語・英語・日本語に即時対応。操作ガイドや県市・離島の地名も選択した言語に一括変換されます。"
 )
 
 fun getStrings(lang: AppLanguage): Strings {
@@ -493,7 +681,10 @@ fun getLocalizedCityName(name: String, lang: AppLanguage): String {
         "屏東縣" to "Pingtung County",
         "澎湖縣" to "Penghu County",
         "金門縣" to "Kinmen County",
-        "連江縣（馬祖）" to "Lienchiang County (Matsu)"
+        "連江縣（馬祖）" to "Lienchiang County (Matsu)",
+        "琉球嶼" to "Liuqiu Island (Lambai)",
+        "綠島" to "Green Island",
+        "蘭嶼" to "Orchid Island (Lanyu)"
     )
     val jaMap = mapOf(
         "臺北市" to "台北市",
@@ -517,7 +708,10 @@ fun getLocalizedCityName(name: String, lang: AppLanguage): String {
         "屏東縣" to "屏東県",
         "澎湖縣" to "澎湖県",
         "金門縣" to "金門県",
-        "連江縣（馬祖）" to "連江県（馬祖）"
+        "連江縣（馬祖）" to "連江県（馬祖）",
+        "琉球嶼" to "琉球嶼（小琉球）",
+        "綠島" to "緑島",
+        "蘭嶼" to "蘭嶼"
     )
     return when (lang) {
         AppLanguage.EN -> enMap[name] ?: name

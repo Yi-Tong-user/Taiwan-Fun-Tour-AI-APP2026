@@ -21,7 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.taiwan.explore.data.GeminiPlanService
 import com.taiwan.explore.data.SavedManager
+import com.taiwan.explore.data.TaiwanDataProvider
 import com.taiwan.explore.model.ItineraryPlan
 import com.taiwan.explore.ui.theme.*
 import com.taiwan.explore.util.AppLanguage
@@ -34,17 +36,79 @@ fun ItineraryViewDialog(
     onDismiss: () -> Unit,
     onRegenerate: (() -> Unit)? = null,
     showRegenerate: Boolean = true,
-    language: AppLanguage = AppLanguage.ZH_TW
+    language: AppLanguage = AppLanguage.ZH_TW,
+    onOpenSaved: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = getStrings(language)
 
-    var isFullSaved by remember(plan) {
-        mutableStateOf(SavedManager.isFullItinerarySaved(context, plan.title))
+    
+    var showLimitDialog by remember { mutableStateOf(false) }
+
+    if (showLimitDialog) {
+        AlertDialog(
+            onDismissRequest = { showLimitDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⚠️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "收藏夾已額滿", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            },
+            text = {
+                Text(
+                    text = strings.savedLimitReached,
+                    fontSize = 14.sp,
+                    color = Slate700
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLimitDialog = false
+                        onOpenSaved()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal700)
+                ) {
+                    Text(strings.organizeSaved, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLimitDialog = false }) {
+                    Text(strings.close)
+                }
+            }
+        )
+    }
+
+    var isFullSaved by remember(plan.id) {
+        mutableStateOf(SavedManager.isFullItinerarySavedByPlan(context, plan))
     }
 
     // Refresh trigger for day/spot saved states
     var saveUpdateTrigger by remember { mutableStateOf(0) }
+
+    val isIslandDestination = remember(plan) {
+        plan.isIsland || (TaiwanDataProvider.getCityByName(plan.cityName)?.region == "離島")
+    }
+
+    var islandInternalTransport by remember(plan) {
+        mutableStateOf(
+            if (isIslandDestination) {
+                when (plan.selectedTransport) {
+                    "騎乘機車" -> "騎乘機車"
+                    "大眾運輸" -> "大眾運輸"
+                    "自行開車" -> "自行開車"
+                    else -> "騎乘機車"
+                }
+            } else {
+                plan.selectedTransport
+            }
+        )
+    }
+
+    val activeTransport = if (isIslandDestination) islandInternalTransport else plan.selectedTransport
+    val geminiService = remember { GeminiPlanService() }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -71,15 +135,46 @@ fun ItineraryViewDialog(
                         color = Slate900
                     )
                     Text(
-                        text = "${plan.cityName} · ${plan.style} · 共 ${plan.daysCount} 天",
+                        text = "${plan.cityName} · ${plan.style} · ${activeTransport} · 共 ${plan.daysCount} 天",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Teal700,
                         fontWeight = FontWeight.Medium
                     )
                 }
 
-                IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = strings.close)
+                // 收藏(字樣) then ✕(符號) on the top right
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = {
+                            if (showRegenerate && onRegenerate != null) {
+                                if (isFullSaved) {
+                                    SavedManager.removeFullItinerary(context, plan.id)
+                                    isFullSaved = false
+                                } else {
+                                    if (!SavedManager.canSaveFull(context)) {
+                                        showLimitDialog = true
+                                    } else {
+                                        SavedManager.saveFullItinerary(context, plan)
+                                        isFullSaved = true
+                                    }
+                                }
+                            } else {
+                                onOpenSaved()
+                            }
+                        },
+                        enabled = showRegenerate && onRegenerate != null
+                    ) {
+                        Text(
+                            text = if (isFullSaved) strings.savedFullItinerary else strings.saveFullItinerary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (!showRegenerate || onRegenerate == null) Slate400 else if (isFullSaved) Amber700 else Teal700
+                        )
+                    }
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = strings.close, tint = Slate600)
+                    }
                 }
             }
 
@@ -96,17 +191,22 @@ fun ItineraryViewDialog(
                 Button(
                     onClick = {
                         if (isFullSaved) {
-                            val all = SavedManager.getFullItineraries(context)
-                            val found = all.find { it.title == plan.title }
-                            found?.let { SavedManager.removeFullItinerary(context, it.id) }
+                            SavedManager.removeFullItinerary(context, plan.id)
                             isFullSaved = false
                         } else {
-                            SavedManager.saveFullItinerary(context, plan)
-                            isFullSaved = true
+                            if (!SavedManager.canSaveFull(context)) {
+                                showLimitDialog = true
+                            } else {
+                                SavedManager.saveFullItinerary(context, plan)
+                                isFullSaved = true
+                            }
                         }
                     },
+                    enabled = showRegenerate && onRegenerate != null,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isFullSaved) Amber600 else Teal700
+                        containerColor = if (isFullSaved) Amber600 else Teal700,
+                        disabledContainerColor = Slate200,
+                        disabledContentColor = Slate600
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(if (showRegenerate && onRegenerate != null) 1.2f else 1f)
@@ -146,58 +246,122 @@ fun ItineraryViewDialog(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Transit Warning if present
-            plan.transitWarning?.let { warning ->
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Amber50,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Amber300),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = Amber800)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = warning,
-                            fontSize = 12.sp,
-                            color = Amber900,
-                            lineHeight = 17.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            // Island Notice if present
-            plan.islandNotice?.let { notice ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Teal50)
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = notice,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Teal800,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            // Days Itinerary List
+            // Days Itinerary List (Transit information moved INSIDE LazyColumn to scroll smoothly with itinerary)
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
+                // Island Internal Transport Switcher inside LazyColumn (re-plan island transit)
+                if (isIslandDestination) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Teal50,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Teal300),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Tune, contentDescription = null, tint = Teal800, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.islandInternalTitle,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Teal900
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    val internalModes = listOf(
+                                        "騎乘機車" to strings.islandInternalScooter,
+                                        "自行開車" to strings.islandInternalCar,
+                                        "大眾運輸" to strings.islandInternalBus
+                                    )
+                                    internalModes.forEach { (mode, label) ->
+                                        val isCurrent = islandInternalTransport == mode
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (isCurrent) Teal700 else Color.White,
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                1.dp,
+                                                if (isCurrent) Teal800 else Teal200
+                                            ),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable { islandInternalTransport = mode }
+                                        ) {
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                                    color = if (isCurrent) Color.White else Slate700
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Transit Warning inside LazyColumn (scrolls with page, never blocks itinerary)
+                plan.transitWarning?.let { warning ->
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Amber50,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Amber300),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = Amber800)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = warning,
+                                    fontSize = 12.sp,
+                                    color = Amber900,
+                                    lineHeight = 17.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Island Notice inside LazyColumn (scrolls with page, never blocks itinerary)
+                plan.islandNotice?.let { notice ->
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Teal50)
+                                .padding(12.dp)
+                                .padding(bottom = 6.dp)
+                        ) {
+                            Text(
+                                text = notice,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Teal800,
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp
+                            )
+                        }
+                    }
+                }
+
                 items(plan.days) { day ->
                     val isDaySaved = remember(day, saveUpdateTrigger) {
                         SavedManager.isDayItinerarySaved(context, plan.cityName, day.dayNumber, day.title)
@@ -239,7 +403,11 @@ fun ItineraryViewDialog(
                                             val item = all.find { it.cityName == plan.cityName && it.dayNumber == day.dayNumber && it.title == day.title }
                                             item?.let { SavedManager.removeDayItinerary(context, it.id) }
                                         } else {
-                                            SavedManager.saveDayItinerary(context, plan.cityName, day)
+                                            if (!SavedManager.canSaveDay(context)) {
+                                                showLimitDialog = true
+                                            } else {
+                                                SavedManager.saveDayItinerary(context, plan.cityName, day)
+                                            }
                                         }
                                         saveUpdateTrigger++
                                     }
@@ -322,16 +490,63 @@ fun ItineraryViewDialog(
                                             modifier = Modifier.padding(vertical = 2.dp)
                                         )
 
+                                        val spotTransportIcon = when (activeTransport) {
+                                            "騎乘機車" -> Icons.Default.TwoWheeler
+                                            "大眾運輸" -> Icons.Default.Train
+                                            "自行車漫遊" -> Icons.Default.DirectionsBike
+                                            "輪船接駁" -> Icons.Default.DirectionsBoat
+                                            "飛機往返" -> Icons.Default.Flight
+                                            else -> Icons.Default.DirectionsCar
+                                        }
+
+                                        val displayTransportText = if (isIslandDestination && activeTransport != plan.selectedTransport) {
+                                            when (activeTransport) {
+                                                "騎乘機車" -> "機車漫遊約 8-12 分鐘"
+                                                "自行開車" -> "自駕開車約 6-10 分鐘"
+                                                else -> "環島公車約 15-20 分鐘"
+                                            }
+                                        } else {
+                                            spot.transportToNext
+                                        }
+
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = "⏱️ ${spot.duration}  ·  🚗 ${spot.transportToNext}",
-                                                fontSize = 11.sp,
-                                                color = Teal800
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f).padding(end = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Schedule,
+                                                    contentDescription = null,
+                                                    tint = Teal700,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text(
+                                                    text = spot.duration,
+                                                    fontSize = 11.sp,
+                                                    color = Teal800
+                                                )
+
+                                                Spacer(modifier = Modifier.width(8.dp))
+
+                                                Icon(
+                                                    imageVector = spotTransportIcon,
+                                                    contentDescription = null,
+                                                    tint = Teal700,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text(
+                                                    text = displayTransportText,
+                                                    fontSize = 11.sp,
+                                                    color = Teal800,
+                                                    maxLines = 1
+                                                )
+                                            }
 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 // Independent Spot Favorite Button
@@ -340,14 +555,18 @@ fun ItineraryViewDialog(
                                                         if (isSpotSaved) {
                                                             SavedManager.removeSpotByName(context, plan.cityName, spot.name)
                                                         } else {
-                                                            SavedManager.saveSpot(
-                                                                context = context,
-                                                                cityName = plan.cityName,
-                                                                name = spot.name,
-                                                                intro = spot.intro,
-                                                                googleMapsQuery = spot.googleMapsKeyword,
-                                                                duration = spot.duration
-                                                            )
+                                                            if (!SavedManager.canSaveSpot(context)) {
+                                                                showLimitDialog = true
+                                                            } else {
+                                                                SavedManager.saveSpot(
+                                                                    context = context,
+                                                                    cityName = plan.cityName,
+                                                                    name = spot.name,
+                                                                    intro = spot.intro,
+                                                                    googleMapsQuery = spot.googleMapsKeyword,
+                                                                    duration = spot.duration
+                                                                )
+                                                            }
                                                         }
                                                         saveUpdateTrigger++
                                                     },
@@ -386,12 +605,20 @@ fun ItineraryViewDialog(
                                 }
                             }
 
-                            // Daily "開啟多點行程路線 🗺️" Button
-                            if (day.multiStopRouteUrl.isNotBlank()) {
+                            // Daily Multi-stop Route Button (Incorporating stay hotel if present)
+                            val dynamicRouteUrl = remember(day, activeTransport) {
+                                geminiService.buildMultiStopRouteUrl(
+                                    spots = day.spots,
+                                    stayHotel = day.stayHotel,
+                                    transport = activeTransport
+                                ) ?: day.multiStopRouteUrl
+                            }
+
+                            if (dynamicRouteUrl.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(10.dp))
                                 OutlinedButton(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(day.multiStopRouteUrl))
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(dynamicRouteUrl))
                                         context.startActivity(intent)
                                     },
                                     shape = RoundedCornerShape(10.dp),
@@ -399,7 +626,17 @@ fun ItineraryViewDialog(
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Teal600),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(text = strings.multiStopRoute, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Icon(
+                                        imageVector = Icons.Default.Navigation,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (day.stayHotel != null) strings.multiStopRouteWithHotel else strings.multiStopRoute,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
 

@@ -259,7 +259,11 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "瞭解臺灣 22 縣市分區探索、農漁牧特產、AI 1~5 日遊客製行程生成、三層收藏功能與 Google Maps 導航等完整操作流程。",
+                    text = when (currentLanguage) {
+                        AppLanguage.EN -> "Learn about random city adventures, region discovery, recommendations, AI smart tours, 3-tier favorites, and multilingual support."
+                        AppLanguage.JA -> "ランダムで街へ出発、地域特産、おすすめスポット、AI旅程、お気に入り管理、多言語切り替えの操作ガイドを確認できます。"
+                        else -> "瞭解隨機出發一座城市、分區探索農漁特產、精選推薦、AI 旅程規劃、收藏管理與多語言切換等完整操作流程。"
+                    },
                     fontSize = 13.sp,
                     color = Slate600,
                     lineHeight = 18.sp

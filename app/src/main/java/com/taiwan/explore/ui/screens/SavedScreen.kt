@@ -44,6 +44,7 @@ fun SavedScreen(
     var selectedPlanForView by remember { mutableStateOf<ItineraryPlan?>(null) }
     var selectedDayForView by remember { mutableStateOf<Pair<String, DayItinerary>?>(null) }
     var selectedSpotForView by remember { mutableStateOf<SavedSpotItem?>(null) }
+    var showClearAllSpotsConfirm by remember { mutableStateOf(false) }
 
     val fullList = remember(refreshKey) { SavedManager.getFullItineraries(context) }
     val dayList = remember(refreshKey) { SavedManager.getDayItineraries(context) }
@@ -61,6 +62,44 @@ fun SavedScreen(
         else -> spotList.size
     }
     val isCurrentTabFull = currentTabCount >= SavedManager.MAX_SAVED_ITEMS
+
+    
+    if (showClearAllSpotsConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearAllSpotsConfirm = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🗑️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "確認刪除全部收藏？", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            },
+            text = {
+                Text(
+                    text = "確定要刪除景點收藏中的全部收藏嗎？若確認，則將清除所有景點收藏，此動作無法復原。",
+                    fontSize = 13.sp,
+                    color = Slate700
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        SavedManager.clearAllSpots(context)
+                        refreshKey++
+                        showClearAllSpotsConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("確認刪除", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearAllSpotsConfirm = false }) {
+                    Text(strings.close)
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -362,12 +401,45 @@ fun SavedScreen(
                 }
 
                 2 -> {
-                    // Spot Items
+                                        // Spot Items
                     if (spotList.isEmpty()) {
                         item {
                             EmptyState(strings.emptySavedSpot)
                         }
                     } else {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "景點收藏 (${spotList.size} / 20)",
+                                    fontSize = 12.sp,
+                                    color = Slate600,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                OutlinedButton(
+                                    onClick = { showClearAllSpotsConfirm = true },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.6f)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteSweep,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.Red
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("一鍵刪除全部收藏", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
                         items(spotList, key = { it.id }) { spot ->
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { value ->

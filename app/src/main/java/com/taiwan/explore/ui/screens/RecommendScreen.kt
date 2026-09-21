@@ -36,17 +36,17 @@ import com.taiwan.explore.util.getStrings
 @Composable
 fun RecommendScreen(
     initialCityName: String = "臺北市",
-    language: AppLanguage = AppLanguage.ZH_TW
+    language: AppLanguage = AppLanguage.ZH_TW,
+    onOpenSaved: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = getStrings(language)
 
-    var selectedRegion by remember { mutableStateOf("全部") }
-    val regions = listOf("全部", "北部", "中部", "南部", "東部", "離島")
+    var selectedRegion by remember { mutableStateOf("北部") }
+    val regions = listOf("北部", "中部", "南部", "東部", "離島")
 
     val citiesInRegion = remember(selectedRegion) {
-        if (selectedRegion == "全部") TaiwanDataProvider.cities
-        else TaiwanDataProvider.cities.filter { it.region == selectedRegion }
+        TaiwanDataProvider.cities.filter { it.region == selectedRegion }
     }
 
     var selectedCity by remember {
@@ -55,13 +55,52 @@ fun RecommendScreen(
 
     // Auto-update selectedCity if it's not in the new region
     LaunchedEffect(selectedRegion) {
-        if (selectedRegion != "全部" && selectedCity.region != selectedRegion) {
+        if (selectedCity.region != selectedRegion) {
             citiesInRegion.firstOrNull()?.let { selectedCity = it }
         }
     }
 
     var selectedCategoryTab by remember { mutableStateOf(0) } // 0: 必遊景點, 1: 觀光工廠, 2: 住宿推薦
     var saveTrigger by remember { mutableStateOf(0) }
+
+    var showLimitDialog by remember { mutableStateOf(false) }
+
+    if (showLimitDialog) {
+        AlertDialog(
+            onDismissRequest = { showLimitDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⚠️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "景點收藏已額滿", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            },
+            text = {
+                Text(
+                    text = "景點收藏已額滿，請先整理收藏。",
+                    fontSize = 14.sp,
+                    color = Slate700
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLimitDialog = false
+                        onOpenSaved()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal700)
+                ) {
+                    Text(strings.organizeSaved, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLimitDialog = false }) {
+                    Text(strings.close)
+                }
+            }
+        )
+    }
+
 
     // Expansion states
     var expandedSpots by remember(selectedCity) { mutableStateOf(false) }
@@ -180,13 +219,8 @@ fun RecommendScreen(
                     }
                 }
 
-                Text(
-                    text = "${strings.selectCity}：${getLocalizedCityName(selectedCity.name, language)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Slate900,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
+                // "遊玩城市:" label removed per user requirement
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // City Chips
                 LazyRow(
@@ -257,7 +291,8 @@ fun RecommendScreen(
                             spot = spot,
                             strings = strings,
                             saveTrigger = saveTrigger,
-                            onToggleSave = { saveTrigger++ }
+                            onToggleSave = { saveTrigger++ },
+                            onLimitReached = { showLimitDialog = true }
                         )
                     }
 
@@ -274,7 +309,7 @@ fun RecommendScreen(
                                     Icon(Icons.Default.ExpandMore, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "${strings.viewMore} (共 ${selectedCity.highlights.size.coerceAtMost(15)} 處景點)",
+                                        text = strings.viewMore,
                                         fontWeight = FontWeight.Bold,
                                         color = Teal700
                                     )
@@ -293,7 +328,8 @@ fun RecommendScreen(
                             factory = factory,
                             strings = strings,
                             saveTrigger = saveTrigger,
-                            onToggleSave = { saveTrigger++ }
+                            onToggleSave = { saveTrigger++ },
+                            onLimitReached = { showLimitDialog = true }
                         )
                     }
 
@@ -330,7 +366,8 @@ fun RecommendScreen(
                             acc = acc,
                             strings = strings,
                             saveTrigger = saveTrigger,
-                            onToggleSave = { saveTrigger++ }
+                            onToggleSave = { saveTrigger++ },
+                            onLimitReached = { showLimitDialog = true }
                         )
                     }
 
@@ -368,7 +405,8 @@ private fun SpotCard(
     spot: Spot,
     strings: com.taiwan.explore.util.Strings,
     saveTrigger: Int,
-    onToggleSave: () -> Unit
+    onToggleSave: () -> Unit,
+    onLimitReached: () -> Unit
 ) {
     val isSaved = remember(spot, saveTrigger) {
         SavedManager.isSpotSaved(context, cityName, spot.name)
@@ -424,16 +462,21 @@ private fun SpotCard(
                         onClick = {
                             if (isSaved) {
                                 SavedManager.removeSpotByName(context, cityName, spot.name)
+                                onToggleSave()
                             } else {
-                                SavedManager.saveSpot(
-                                    context = context,
-                                    cityName = cityName,
-                                    name = spot.name,
-                                    intro = spot.intro,
-                                    googleMapsQuery = spot.googleMapsQuery
-                                )
+                                if (!SavedManager.canSaveSpot(context)) {
+                                    onLimitReached()
+                                } else {
+                                    SavedManager.saveSpot(
+                                        context = context,
+                                        cityName = cityName,
+                                        name = spot.name,
+                                        intro = spot.intro,
+                                        googleMapsQuery = spot.googleMapsQuery
+                                    )
+                                    onToggleSave()
+                                }
                             }
-                            onToggleSave()
                         }
                     ) {
                         Icon(
@@ -482,7 +525,8 @@ private fun TourismFactoryCard(
     factory: TourismFactory,
     strings: com.taiwan.explore.util.Strings,
     saveTrigger: Int,
-    onToggleSave: () -> Unit
+    onToggleSave: () -> Unit,
+    onLimitReached: () -> Unit
 ) {
     val isSaved = remember(factory, saveTrigger) {
         SavedManager.isSpotSaved(context, cityName, factory.name)
@@ -527,16 +571,21 @@ private fun TourismFactoryCard(
                         onClick = {
                             if (isSaved) {
                                 SavedManager.removeSpotByName(context, cityName, factory.name)
+                                onToggleSave()
                             } else {
-                                SavedManager.saveSpot(
-                                    context = context,
-                                    cityName = cityName,
-                                    name = factory.name,
-                                    intro = factory.intro,
-                                    googleMapsQuery = factory.googleMapsQuery
-                                )
+                                if (!SavedManager.canSaveSpot(context)) {
+                                    onLimitReached()
+                                } else {
+                                    SavedManager.saveSpot(
+                                        context = context,
+                                        cityName = cityName,
+                                        name = factory.name,
+                                        intro = factory.intro,
+                                        googleMapsQuery = factory.googleMapsQuery
+                                    )
+                                    onToggleSave()
+                                }
                             }
-                            onToggleSave()
                         }
                     ) {
                         Icon(
@@ -584,7 +633,8 @@ private fun AccommodationCard(
     acc: Accommodation,
     strings: com.taiwan.explore.util.Strings,
     saveTrigger: Int,
-    onToggleSave: () -> Unit
+    onToggleSave: () -> Unit,
+    onLimitReached: () -> Unit
 ) {
     val isSaved = remember(acc, saveTrigger) {
         SavedManager.isSpotSaved(context, cityName, acc.name)

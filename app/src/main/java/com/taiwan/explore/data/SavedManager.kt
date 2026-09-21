@@ -110,7 +110,9 @@ object SavedManager {
                     )
                 }
 
+                val planId = planObj.optString("id", obj.optString("id", UUID.randomUUID().toString()))
                 val plan = ItineraryPlan(
+                    id = planId,
                     title = planObj.optString("title"),
                     cityName = planObj.optString("cityName"),
                     daysCount = planObj.optInt("daysCount"),
@@ -123,7 +125,7 @@ object SavedManager {
 
                 list.add(
                     SavedFullItinerary(
-                        id = obj.optString("id"),
+                        id = obj.optString("id", planId),
                         cityName = obj.optString("cityName"),
                         title = obj.optString("title"),
                         style = obj.optString("style"),
@@ -141,8 +143,8 @@ object SavedManager {
 
     fun saveFullItinerary(context: Context, plan: ItineraryPlan): SavedFullItinerary? {
         val current = getFullItineraries(context).toMutableList()
-        // If already exists with same title & cityName, don't duplicate
-        val existing = current.find { it.cityName == plan.cityName && it.title == plan.title }
+        // If already exists with same plan id or exact title & cityName, don't duplicate
+        val existing = current.find { it.plan.id == plan.id }
         if (existing != null) return existing
 
         if (current.size >= MAX_SAVED_ITEMS) {
@@ -150,6 +152,7 @@ object SavedManager {
         }
 
         val item = SavedFullItinerary(
+            id = plan.id,
             cityName = plan.cityName,
             title = plan.title,
             style = plan.style,
@@ -162,12 +165,16 @@ object SavedManager {
     }
 
     fun removeFullItinerary(context: Context, id: String) {
-        val current = getFullItineraries(context).filter { it.id != id }
+        val current = getFullItineraries(context).filter { it.id != id && it.plan.id != id }
         saveFullList(context, current)
     }
 
     fun isFullItinerarySaved(context: Context, title: String): Boolean {
         return getFullItineraries(context).any { it.title == title }
+    }
+
+    fun isFullItinerarySavedByPlan(context: Context, plan: ItineraryPlan): Boolean {
+        return getFullItineraries(context).any { it.plan.id == plan.id || it.id == plan.id }
     }
 
     private fun saveFullList(context: Context, list: List<SavedFullItinerary>) {
@@ -182,6 +189,7 @@ object SavedManager {
                 put("savedAt", item.savedAt)
 
                 val planObj = JSONObject().apply {
+                    put("id", item.plan.id)
                     put("title", item.plan.title)
                     put("cityName", item.plan.cityName)
                     put("daysCount", item.plan.daysCount)

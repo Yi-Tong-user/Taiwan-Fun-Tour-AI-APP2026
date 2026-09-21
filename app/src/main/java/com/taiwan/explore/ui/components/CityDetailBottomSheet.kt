@@ -39,7 +39,8 @@ fun CityDetailBottomSheet(
 ) {
     val context = LocalContext.current
     val strings = getStrings(language)
-    var selectedTab by remember { mutableStateOf(0) } // 0: 地方特色, 1: 必遊景點, 2: 觀光工廠, 3: 住宿精選
+    var selectedTab by remember { mutableStateOf(0) }
+    var showLimitDialog by remember { mutableStateOf(false) } // 0: 地方特色, 1: 必遊景點, 2: 觀光工廠, 3: 住宿精選
     var saveTrigger by remember { mutableStateOf(0) }
 
     val tabs = listOf(
@@ -48,6 +49,43 @@ fun CityDetailBottomSheet(
         strings.tourismFactoriesTitle,
         strings.accommodationsTitle
     )
+
+    
+    if (showLimitDialog) {
+        AlertDialog(
+            onDismissRequest = { showLimitDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⚠️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "收藏夾已額滿", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            },
+            text = {
+                Text(
+                    text = strings.savedLimitReached,
+                    fontSize = 14.sp,
+                    color = Slate700
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLimitDialog = false
+                        onOpenSaved()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal700)
+                ) {
+                    Text(strings.organizeSaved, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLimitDialog = false }) {
+                    Text(strings.close)
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -88,8 +126,18 @@ fun CityDetailBottomSheet(
                     }
                 }
 
-                IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = strings.close)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onOpenSaved) {
+                        Text(
+                            text = strings.tabSaved,
+                            fontWeight = FontWeight.Bold,
+                            color = Teal700,
+                            fontSize = 14.sp
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = strings.close, tint = Slate600)
+                    }
                 }
             }
 
@@ -236,13 +284,17 @@ fun CityDetailBottomSheet(
                                             if (isSaved) {
                                                 SavedManager.removeSpotByName(context, city.name, spot.name)
                                             } else {
-                                                SavedManager.saveSpot(
-                                                    context = context,
-                                                    cityName = city.name,
-                                                    name = spot.name,
-                                                    intro = spot.intro,
-                                                    googleMapsQuery = spot.googleMapsQuery
-                                                )
+                                                if (!SavedManager.canSaveSpot(context)) {
+                                                    showLimitDialog = true
+                                                } else {
+                                                    SavedManager.saveSpot(
+                                                        context = context,
+                                                        cityName = city.name,
+                                                        name = spot.name,
+                                                        intro = spot.intro,
+                                                        googleMapsQuery = spot.googleMapsQuery
+                                                    )
+                                                }
                                             }
                                             saveTrigger++
                                         }
@@ -312,6 +364,9 @@ fun CityDetailBottomSheet(
                                                 if (isSaved) {
                                                     SavedManager.removeSpotByName(context, city.name, factory.name)
                                                 } else {
+                                                    if (!SavedManager.canSaveSpot(context)) {
+                                                    showLimitDialog = true
+                                                } else {
                                                     SavedManager.saveSpot(
                                                         context = context,
                                                         cityName = city.name,
@@ -319,6 +374,7 @@ fun CityDetailBottomSheet(
                                                         intro = factory.intro,
                                                         googleMapsQuery = factory.googleMapsQuery
                                                     )
+                                                }
                                                 }
                                                 saveTrigger++
                                             }
