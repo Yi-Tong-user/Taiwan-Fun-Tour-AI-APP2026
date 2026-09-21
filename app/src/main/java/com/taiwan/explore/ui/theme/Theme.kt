@@ -49,6 +49,7 @@ val Blue50 = Color(0xFFEFF6FF)
 val Blue100 = Color(0xFFDBEAFE)
 val Blue600 = Color(0xFF2563EB)
 val Blue800 = Color(0xFF1E40AF)
+val Blue900 = Color(0xFF1E3A8A)
 val Rose600 = Color(0xFFE11D48)
 
 // Emerald Palette

@@ -426,10 +426,10 @@ class GeminiPlanService {
                             name = "${city.name}${foodName}巡禮",
                             intro = "走訪在地傳統市場與知名老店，品嚐最道地的${foodName}及人氣名產。",
                             googleMapsQuery = "${city.name} $foodName",
-                            districts = city.districts.firstOrNull() ?: city.name,
-                            openHours = "10:30 - 21:00",
-                            openHour = 10,
-                            closeHour = 21
+                            district = city.districts.firstOrNull() ?: city.name,
+                            openingHours = "10:30 - 21:00",
+                            startHour = 10,
+                            endHour = 21
                         )
                     )
                 }

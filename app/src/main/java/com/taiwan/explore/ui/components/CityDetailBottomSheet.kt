@@ -35,7 +35,8 @@ fun CityDetailBottomSheet(
     city: CityData,
     onDismiss: () -> Unit,
     onPlanItinerary: (days: Int, style: String) -> Unit,
-    language: AppLanguage = AppLanguage.ZH_TW
+    language: AppLanguage = AppLanguage.ZH_TW,
+    onOpenSaved: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val strings = getStrings(language)

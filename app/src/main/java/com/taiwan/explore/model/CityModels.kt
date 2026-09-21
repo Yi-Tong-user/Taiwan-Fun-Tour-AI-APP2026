@@ -46,10 +46,10 @@ data class CityData(
     val description: String,
     val region: String, // "北部", "中部", "南部", "東部", "離島"
     val districts: List<String> = emptyList(), // 所有行政區清單
-    val highlights: List<Spot>,
-    val tourismFactories: List<TourismFactory>,
-    val accommodations: List<Accommodation>,
-    val famousFood: List<String>,
+    val highlights: List<Spot> = emptyList(),
+    val tourismFactories: List<TourismFactory> = emptyList(),
+    val accommodations: List<Accommodation> = emptyList(),
+    val famousFood: List<String> = emptyList(),
     val islandNotice: String? = null
 )
 
